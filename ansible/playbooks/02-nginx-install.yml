@@ -1,0 +1,48 @@
+---
+- name: Установка nginx на веб-серверах
+  hosts: webservers
+  become: yes
+  
+  tasks:
+    - name: Установка nginx
+      apt:
+        name: nginx
+        state: present
+        update_cache: yes
+    
+    - name: Создание директории для сайта
+      file:
+        path: /var/www/html
+        state: directory
+        owner: www-data
+        group: www-data
+        mode: '0755'
+    
+    - name: Копирование файлов сайта
+      copy:
+        src: ../files/nginx/index.html
+        dest: /var/www/html/index.html
+        owner: www-data
+        group: www-data
+        mode: '0644'
+    
+    - name: Копирование конфигурации nginx
+      copy:
+        src: ../templates/nginx-site.conf
+        dest: /etc/nginx/sites-available/default
+        owner: root
+        group: root
+        mode: '0644'
+      notify: restart nginx
+    
+    - name: Запуск nginx
+      service:
+        name: nginx
+        state: started
+        enabled: yes
+  
+  handlers:
+    - name: restart nginx
+      service:
+        name: nginx
+        state: restarted

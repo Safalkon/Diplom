@@ -1,0 +1,49 @@
+# Замените IP-адреса на реальные из Terraform outputs
+
+# Бастион хост (публичный IP)
+[bastion]
+bastion ansible_host=ВАШ_BASTION_PUBLIC_IP
+
+# Веб-сервера (внутренние IP через бастион)
+[webservers]
+web1 ansible_host=10.0.2.10
+web2 ansible_host=10.0.3.10
+
+# Zabbix сервер (публичный IP)
+[monitoring]
+zabbix ansible_host=ВАШ_ZABBIX_PUBLIC_IP
+
+# ELK сервера
+[elasticsearch]
+elasticsearch ansible_host=10.0.5.10
+
+[kibana]
+kibana ansible_host=ВАШ_KIBANA_PUBLIC_IP
+
+# Группы
+[all_hosts:children]
+bastion
+webservers
+monitoring
+elasticsearch
+kibana
+
+[internal_hosts:children]
+webservers
+elasticsearch
+
+# Переменные для групп
+[bastion:vars]
+is_bastion=true
+
+[webservers:vars]
+role=web-server
+
+[monitoring:vars]
+role=monitoring
+
+[elasticsearch:vars]
+role=elasticsearch
+
+[kibana:vars]
+role=kibana
