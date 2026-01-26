@@ -1,8 +1,3 @@
-# Data source for Ubuntu image
-data "yandex_compute_image" "ubuntu" {
-  family = "ubuntu-2204-lts"
-}
-
 # Web Servers with explicit zone assignment
 resource "yandex_compute_instance" "web" {
   for_each = {

@@ -1,10 +1,3 @@
-terraform {
-  required_providers {
-    yandex = {
-      source = "yandex-cloud/yandex"
-    }
-  }
-}
 # Bastion Host
 resource "yandex_compute_instance" "bastion" {
   name        = "${local.project_prefix}-bastion"
@@ -31,7 +24,11 @@ resource "yandex_compute_instance" "bastion" {
     security_group_ids = [yandex_vpc_security_group.bastion.id]
     nat                = true
   }
-  
+    depends_on = [
+    yandex_vpc_subnet.public,
+    yandex_vpc_security_group.bastion
+  ]
+
   scheduling_policy {
     preemptible = var.vm_preemptible
   }

@@ -1,10 +1,3 @@
-terraform {
-  required_providers {
-    yandex = {
-      source = "yandex-cloud/yandex"
-    }
-  }
-}
 # Target Group
 resource "yandex_alb_target_group" "web" {
   name = "${local.project_prefix}-target-group"
