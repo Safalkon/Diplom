@@ -4,7 +4,7 @@
 echo "🔄 Обновление inventory файла..."
 
 # Переходим в директорию Terraform
-cd ~/yandex-diploma/terraform
+cd ../terraform
 
 # Получаем IP адреса
 BASTION_IP=$(terraform output -raw bastion_public_ip 2>/dev/null || echo "NOT_FOUND")

@@ -1,3 +1,10 @@
+terraform {
+  required_providers {
+    yandex = {
+      source = "yandex-cloud/yandex"
+    }
+  }
+}
 # Bastion Host
 resource "yandex_compute_instance" "bastion" {
   name        = "${local.project_prefix}-bastion"

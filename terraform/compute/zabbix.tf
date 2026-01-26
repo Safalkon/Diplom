@@ -1,7 +1,7 @@
- Zabbix Server
+#Zabbix Server
 resource "yandex_compute_instance" "zabbix" {
   name        = "${local.project_prefix}-zabbix"
-  hostname    = local.vm_fqdn("${local.project_prefix}-zabbix")
+  hostname    = "zabbix"
   platform_id = "standard-v3"
   zone        = var.yc_zone
   

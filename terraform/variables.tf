@@ -19,13 +19,6 @@ variable "service_account_key_file" {
   sensitive   = true
 }
 
-variable "yc_token" {
-  description = "Yandex Cloud OAuth or IAM token"
-  type        = string
-  default     = null
-  sensitive   = true
-}
-
 # Zone Configuration
 variable "yc_zone" {
   description = "Default zone for resources"
@@ -37,7 +30,7 @@ variable "yc_zone" {
 variable "vm_user" {
   description = "Default SSH user for VMs"
   type        = string
-  default     = "ubuntu"
+  default     = "safalkon"
 }
 
 variable "ssh_public_key" {
@@ -50,7 +43,7 @@ variable "ssh_public_key" {
 variable "environment" {
   description = "Deployment environment"
   type        = string
-  default     = "diploma"
+  default     = "diplom"
 }
 
 # VM Configuration

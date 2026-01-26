@@ -1,3 +1,10 @@
+terraform {
+  required_providers {
+    yandex = {
+      source = "yandex-cloud/yandex"
+    }
+  }
+}
 # Security Group for Bastion
 resource "yandex_vpc_security_group" "bastion" {
   name        = "${local.project_prefix}-bastion-sg"
@@ -193,32 +200,3 @@ resource "yandex_vpc_security_group" "kibana" {
   }
 }
 
-# NAT Gateway Configuration
-resource "yandex_vpc_gateway" "nat_gateway" {
-  name = "${local.project_prefix}-nat-gateway"
-  
-  shared_egress_gateway {}
-}
-
-resource "yandex_vpc_route_table" "nat_route" {
-  name       = "${local.project_prefix}-nat-route"
-  network_id = yandex_vpc_network.main.id
-  
-  static_route {
-    destination_prefix = "0.0.0.0/0"
-    gateway_id         = yandex_vpc_gateway.nat_gateway.id
-  }
-  
-  labels = local.common_tags
-}
-
-# Route Table Bindings
-resource "yandex_vpc_subnet_route_table_binding" "private_app" {
-  subnet_id      = yandex_vpc_subnet.private_app.id
-  route_table_id = yandex_vpc_route_table.nat_route.id
-}
-
-resource "yandex_vpc_subnet_route_table_binding" "private_data" {
-  subnet_id      = yandex_vpc_subnet.private_data.id
-  route_table_id = yandex_vpc_route_table.nat_route.id
-}

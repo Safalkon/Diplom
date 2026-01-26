@@ -48,21 +48,21 @@ resource "yandex_compute_instance" "web" {
     preemptible = var.vm_preemptible
   }
   
-  metadata = {
-    ssh-keys = "${var.vm_user}:${var.ssh_public_key}"
-    user-data =-EOF
-      #cloud-config
-      package_update: true
-      packages:
-        - nginx
-        - python3
-      runcmd:
-        - mkdir -p /var/www/html
-        - echo "Web Server ${each.key} in ${each.value.zone}" > /var/www/html/index.html
-        - systemctl enable nginx
-        - systemctl start nginx
-      EOF
-  }
+metadata = {
+  ssh-keys = "${var.vm_user}:${var.ssh_public_key}"
+  user-data = <<-EOF
+    #cloud-config
+    package_update: true
+    packages:
+      - nginx
+      - python3
+    runcmd:
+      - mkdir -p /var/www/html
+      - echo "Web Server ${each.key} in ${each.value.zone}" > /var/www/html/index.html
+      - systemctl enable nginx
+      - systemctl start nginx
+  EOF
+}
   
   labels = merge(local.common_tags, {
     Role = "web-server"

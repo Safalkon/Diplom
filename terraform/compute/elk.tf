@@ -1,7 +1,7 @@
 # Elasticsearch Server
 resource "yandex_compute_instance" "elasticsearch" {
   name        = "${local.project_prefix}-elasticsearch"
-  hostname    = local.vm_fqdn("${local.project_prefix}-elasticsearch")
+  hostname    = "elasticsearch"
   platform_id = "standard-v3"
   zone        = var.yc_zone
   
@@ -48,7 +48,7 @@ resource "yandex_compute_instance" "elasticsearch" {
 # Kibana Server
 resource "yandex_compute_instance" "kibana" {
   name        = "${local.project_prefix}-kibana"
-  hostname    = local.vm_fqdn("${local.project_prefix}-kibana")
+  hostname    = "kibana"
   platform_id = "standard-v3"
   zone        = var.yc_zone
   
