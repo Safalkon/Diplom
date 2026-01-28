@@ -69,9 +69,33 @@ output "vpc_info" {
   value = {
     vpc_id = try(yandex_vpc_network.main.id, null)
     subnets = {
-      public       = try(yandex_vpc_subnet.public.id, null)
-      private_app  = try(yandex_vpc_subnet.private_app.id, null)
-      private_data = try(yandex_vpc_subnet.private_data.id, null)
+      # Для подсетей с for_each нужно обращаться по ключам или собирать все
+      public = try(
+        { for k, v in yandex_vpc_subnet.public : k => {
+          id          = v.id
+          cidr_blocks = v.v4_cidr_blocks
+          zone        = v.zone
+        }},
+        null
+      )
+      
+      private_app = try(
+        { for k, v in yandex_vpc_subnet.private_app : k => {
+          id          = v.id
+          cidr_blocks = v.v4_cidr_blocks
+          zone        = v.zone
+        }},
+        null
+      )
+      
+      private_data = try(
+        { for k, v in yandex_vpc_subnet.private_data : k => {
+          id          = v.id
+          cidr_blocks = v.v4_cidr_blocks
+          zone        = v.zone
+        }},
+        null
+      )
     }
   }
 }

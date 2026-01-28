@@ -20,14 +20,10 @@ resource "yandex_compute_instance" "bastion" {
   }
   
   network_interface {
-    subnet_id          = yandex_vpc_subnet.public.id
+    subnet_id = yandex_vpc_subnet.public["ru-central1-a"].id
     security_group_ids = [yandex_vpc_security_group.bastion.id]
     nat                = true
   }
-    depends_on = [
-    yandex_vpc_subnet.public,
-    yandex_vpc_security_group.bastion
-  ]
 
   scheduling_policy {
     preemptible = var.vm_preemptible
@@ -47,12 +43,11 @@ resource "yandex_compute_instance" "bastion" {
       runcmd:
         - systemctl enable fail2ban
         - systemctl start fail2ban
-        - sed -i 's/^#Port 22/Port 6022/' /etc/ssh/sshd_config
         - systemctl restart sshd
       EOF
   }
   
   labels = merge(local.common_tags, {
-    Role = "bastion"
+    role = "bastion"
   })
 }

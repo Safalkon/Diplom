@@ -68,8 +68,12 @@ resource "yandex_alb_load_balancer" "web" {
   
   allocation_policy {
     location {
-      zone_id   = var.yc_zone
-      subnet_id = yandex_vpc_subnet.public.id
+      zone_id   = "ru-central1-a"
+      subnet_id = yandex_vpc_subnet.public["ru-central1-a"].id
+    }
+    location {
+      zone_id   = "ru-central1-b"
+      subnet_id = yandex_vpc_subnet.public["ru-central1-b"].id
     }
   }
   

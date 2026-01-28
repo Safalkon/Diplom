@@ -5,39 +5,62 @@ resource "yandex_vpc_network" "main" {
   labels      = local.common_tags
 }
 
-# Public Subnet
+# Public Subnets
 resource "yandex_vpc_subnet" "public" {
-  name           = "${local.project_prefix}-public-subnet"
+  for_each = toset(["ru-central1-a", "ru-central1-b"])
+  
+  name           = "${local.project_prefix}-public-subnet-${each.key}"
   network_id     = yandex_vpc_network.main.id
-  v4_cidr_blocks = [var.public_subnet_cidr]
-  zone           = var.yc_zone
+  v4_cidr_blocks = [
+    cidrsubnet(var.vpc_cidr, 8, 
+      each.key == "ru-central1-a" ? 1 : 2
+    )
+  ]
+  zone           = each.key
+  route_table_id = yandex_vpc_route_table.nat_route.id
   
   labels = merge(local.common_tags, {
-    SubnetType = "public"
+    subnettype = "public"
+    zone       = each.key
   })
 }
 
-# Private App Subnet
+# Private App Subnets
 resource "yandex_vpc_subnet" "private_app" {
-  name           = "${local.project_prefix}-private-app-subnet"
+  for_each = toset(["ru-central1-a", "ru-central1-b"])
+  
+  name           = "${local.project_prefix}-private-app-subnet-${each.key}"
   network_id     = yandex_vpc_network.main.id
-  v4_cidr_blocks = [var.private_app_subnet_cidr]
-  zone           = var.yc_zone
+  v4_cidr_blocks = [
+    cidrsubnet(var.vpc_cidr, 8, 
+      each.key == "ru-central1-a" ? 11 : 12
+    )
+  ]
+  zone           = each.key
+  route_table_id = yandex_vpc_route_table.nat_route.id
   
   labels = merge(local.common_tags, {
-    SubnetType = "private-app"
+    subnettype = "private-app"
+    zone       = each.key
   })
 }
 
-# Private Data Subnet
+# Private Data Subnets
 resource "yandex_vpc_subnet" "private_data" {
-  name           = "${local.project_prefix}-private-data-subnet"
+  for_each = toset(["ru-central1-a", "ru-central1-b"])
+  
+  name           = "${local.project_prefix}-private-data-subnet-${each.key}"
   network_id     = yandex_vpc_network.main.id
-  v4_cidr_blocks = [var.private_data_subnet_cidr]
-  zone           = var.yc_zone
+  v4_cidr_blocks = [
+    cidrsubnet(var.vpc_cidr, 8, 
+      each.key == "ru-central1-a" ? 21 : 22
+    )
+  ]
+  zone           = each.key
   
   labels = merge(local.common_tags, {
-    SubnetType = "private-data"
+    subnettype = "private-data"
+    zone       = each.key
   })
 }
 
@@ -57,15 +80,4 @@ resource "yandex_vpc_route_table" "nat_route" {
   }
   
   labels = local.common_tags
-}
-
-# Route table bindings for private subnets
-resource "yandex_vpc_subnet_route_table_binding" "private_app" {
-  subnet_id      = yandex_vpc_subnet.private_app.id
-  route_table_id = yandex_vpc_route_table.nat_route.id
-}
-
-resource "yandex_vpc_subnet_route_table_binding" "private_data" {
-  subnet_id      = yandex_vpc_subnet.private_data.id
-  route_table_id = yandex_vpc_route_table.nat_route.id
 }

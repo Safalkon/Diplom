@@ -33,10 +33,10 @@ resource "yandex_compute_instance" "web" {
   }
   
   network_interface {
-    subnet_id          = yandex_vpc_subnet.private_app[each.value.subnet].id
+    subnet_id          = yandex_vpc_subnet.private_app[each.value.zone].id
     security_group_ids = [yandex_vpc_security_group.web.id]
     nat                = false
-    ip_address         = cidrhost(yandex_vpc_subnet.private_app[each.value.subnet].v4_cidr_blocks[0], each.value.ip_idx)
+    ip_address         = cidrhost(yandex_vpc_subnet.private_app[each.value.zone].v4_cidr_blocks[0], each.value.ip_idx)
   }
   
   scheduling_policy {
@@ -60,8 +60,8 @@ metadata = {
 }
   
   labels = merge(local.common_tags, {
-    Role = "web-server"
-    Zone = each.value.zone
+    role = "web-server"
+    zone = each.value.zone
   })
   
   depends_on = [

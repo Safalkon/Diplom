@@ -20,7 +20,7 @@ resource "yandex_compute_instance" "zabbix" {
   }
   
   network_interface {
-    subnet_id          = yandex_vpc_subnet.public.id
+    subnet_id = yandex_vpc_subnet.public["ru-central1-a"].id
     security_group_ids = [yandex_vpc_security_group.zabbix.id]
     nat                = true  # Public IP for web access
   }
@@ -34,7 +34,7 @@ resource "yandex_compute_instance" "zabbix" {
   }
   
   labels = merge(local.common_tags, {
-    Role = "zabbix-server"
+    role = "zabbix-server"
   })
   
   depends_on = [

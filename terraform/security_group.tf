@@ -5,7 +5,7 @@ resource "yandex_vpc_security_group" "bastion" {
   network_id  = yandex_vpc_network.main.id
   
   labels = merge(local.common_tags, {
-    Role = "bastion"
+    role = "bastion"
   })
   
   ingress {
@@ -29,7 +29,7 @@ resource "yandex_vpc_security_group" "web" {
   network_id  = yandex_vpc_network.main.id
   
   labels = merge(local.common_tags, {
-    Role = "web"
+    role = "web"
   })
   
   ingress {
@@ -60,7 +60,7 @@ resource "yandex_vpc_security_group" "zabbix" {
   network_id  = yandex_vpc_network.main.id
   
   labels = merge(local.common_tags, {
-    Role = "zabbix"
+    role = "zabbix"
   })
   
   ingress {
@@ -91,7 +91,7 @@ resource "yandex_vpc_security_group" "elasticsearch" {
   network_id  = yandex_vpc_network.main.id
   
   labels = merge(local.common_tags, {
-    Role = "elasticsearch"
+    role = "elasticsearch"
   })
   
   ingress {
@@ -122,7 +122,7 @@ resource "yandex_vpc_security_group" "kibana" {
   network_id  = yandex_vpc_network.main.id
   
   labels = merge(local.common_tags, {
-    Role = "kibana"
+    role = "kibana"
   })
   
   ingress {
