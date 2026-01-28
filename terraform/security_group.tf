@@ -22,7 +22,7 @@ resource "yandex_vpc_security_group" "bastion" {
   }
 }
 
-# Security Group for Web Servers
+# Security Group for Web Servers (упрощенная версия)
 resource "yandex_vpc_security_group" "web" {
   name        = "${local.project_prefix}-web-sg"
   description = "Security group for web servers"
@@ -142,6 +142,43 @@ resource "yandex_vpc_security_group" "kibana" {
   egress {
     protocol       = "ANY"
     description    = "Allow all outbound"
+    v4_cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+# Security Group для ALB
+resource "yandex_vpc_security_group" "alb" {
+  name        = "${local.project_prefix}-alb-sg"
+  description = "Security group for Application Load Balancer"
+  network_id  = yandex_vpc_network.main.id
+  
+  labels = merge(local.common_tags, {
+    role = "alb"
+  })
+  
+  ingress {
+    protocol       = "TCP"
+    description    = "HTTP from internet"
+    v4_cidr_blocks = ["0.0.0.0/0"]
+    port           = 80
+  }
+  
+  ingress {
+    protocol       = "TCP"
+    description    = "HTTPS from internet"
+    v4_cidr_blocks = ["0.0.0.0/0"]
+    port           = 443
+  }
+  
+  egress {
+    protocol          = "ANY"
+    description       = "Allow all outbound to web servers"
+    security_group_id = yandex_vpc_security_group.web.id
+  }
+  
+  egress {
+    protocol       = "ANY"
+    description    = "Allow all outbound to internet"
     v4_cidr_blocks = ["0.0.0.0/0"]
   }
 }

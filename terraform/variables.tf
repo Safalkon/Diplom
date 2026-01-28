@@ -83,3 +83,9 @@ variable "private_data_subnet_cidr" {
   type        = string
   default     = "10.0.3.0/24"
 }
+# Service Account Configuration
+variable "service_account_id" {
+  description = "Service Account ID for Instance Group"
+  type        = string
+  sensitive   = true
+}
