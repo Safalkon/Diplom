@@ -32,8 +32,6 @@ resource "yandex_compute_instance_group" "web_ig" {
     metadata = {
       ssh-keys = "${var.vm_user}:${var.ssh_public_key}"
       user-data = <<-EOF
-#!/bin/bash
-# Простейший скрипт запуска
 apt-get update && apt-get install -y nginx
 systemctl start nginx
 EOF
@@ -57,11 +55,10 @@ EOF
   deploy_policy {
     max_unavailable = 1
     max_expansion   = 0
-    startup_duration = 120
+    startup_duration = 60
   }
 
-  # САМЫЙ ПРОСТОЙ HEALTH CHECK
-  health_check {
+  /* health_check {
     interval            = 5      # 2 секунды
     timeout             = 4      # 1 секунда
     unhealthy_threshold = 3      # 2 неудачи
@@ -72,6 +69,7 @@ EOF
       port = 80
     }
   }
+  */
 
   load_balancer {
     target_group_name        = "${local.project_prefix}-web-target-group"

@@ -37,7 +37,6 @@ resource "yandex_vpc_subnet" "private_app" {
     )
   ]
   zone           = each.key
-  route_table_id = yandex_vpc_route_table.nat_route.id
   
   labels = merge(local.common_tags, {
     subnettype = "private-app"
