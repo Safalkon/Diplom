@@ -5,19 +5,16 @@ resource "yandex_alb_backend_group" "web" {
   http_backend {
     name             = "http-backend"
     port             = 80
-    
-    # Используем instance group вместо target group
     target_group_ids = [yandex_compute_instance_group.web_ig.load_balancer[0].target_group_id]
     
     healthcheck {
-      timeout             = "10s"
-      interval            = "2s"
-      healthy_threshold   = 5
+      timeout             = "3s"
+      interval            = "5s"
+      healthy_threshold   = 3
       unhealthy_threshold = 3
       
       http_healthcheck {
         path = "/health"
-        # Убрали host, так как домена нет
       }
     }
     
@@ -42,7 +39,6 @@ resource "yandex_alb_http_router" "web" {
   labels = local.common_tags
 }
 
-# Virtual Host
 # Virtual Host
 resource "yandex_alb_virtual_host" "web" {
   name           = "default-host"

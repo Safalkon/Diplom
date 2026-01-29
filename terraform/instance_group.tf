@@ -34,20 +34,16 @@ resource "yandex_compute_instance_group" "web_ig" {
     metadata = {
       ssh-keys = "${var.vm_user}:${var.ssh_public_key}"
       user-data = <<-EOF
-        #cloud-config
         package_update: true
+        package_upgrade: false
         packages:
           - nginx
           - python3
         runcmd:
           - mkdir -p /var/www/html
           - echo "Web Server Instance" > /var/www/html/index.html
-          - echo "Instance ID: \$(curl -s http://169.254.169.254/latest/meta-data/instance-id)" >> /var/www/html/index.html
-          - systemctl enable nginx
-          - systemctl start nginx
-          # Health check endpoint
-          - echo '{"status": "healthy", "timestamp": "\$(date)"}' > /var/www/html/health
-          - chmod 644 /var/www/html/health
+          - systemctl enable nginx --now
+          - echo "OK" > /var/www/html/index.html
       EOF
     }
 
@@ -76,10 +72,10 @@ resource "yandex_compute_instance_group" "web_ig" {
 
   # Health check для Instance Group
   health_check {
-    interval            = 2
-    timeout             = 1
-    unhealthy_threshold = 2
-    healthy_threshold   = 2
+    interval            = 10
+    timeout             = 7
+    unhealthy_threshold = 10
+    healthy_threshold   = 6
     
     http_options {
       port = 80
