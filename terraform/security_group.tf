@@ -181,4 +181,22 @@ resource "yandex_vpc_security_group" "alb" {
     description    = "Allow all outbound to internet"
     v4_cidr_blocks = ["0.0.0.0/0"]
   }
+  ingress {
+    protocol       = "TCP"
+    description    = "Health checks from Yandex Cloud"
+    v4_cidr_blocks = ["198.18.235.0/24", "198.18.248.0/24"]
+    port           = 80
+  }
+  
+  egress {
+    protocol          = "ANY"
+    description       = "Allow all outbound to web servers"
+    security_group_id = yandex_vpc_security_group.web.id
+  }
+  
+  egress {
+    protocol       = "ANY"
+    description    = "Allow all outbound to internet"
+    v4_cidr_blocks = ["0.0.0.0/0"]
+  }
 }

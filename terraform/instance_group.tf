@@ -1,4 +1,3 @@
-# Instance Group для веб-серверов (фиксированное количество)
 resource "yandex_compute_instance_group" "web_ig" {
   name               = "${local.project_prefix}-web-ig"
   service_account_id = var.service_account_id
@@ -6,7 +5,6 @@ resource "yandex_compute_instance_group" "web_ig" {
 
   instance_template {
     platform_id = "standard-v3"
-    description = "Web server instance template"
 
     resources {
       cores         = local.vm_specs.web.cores
@@ -34,17 +32,11 @@ resource "yandex_compute_instance_group" "web_ig" {
     metadata = {
       ssh-keys = "${var.vm_user}:${var.ssh_public_key}"
       user-data = <<-EOF
-        package_update: true
-        package_upgrade: false
-        packages:
-          - nginx
-          - python3
-        runcmd:
-          - mkdir -p /var/www/html
-          - echo "Web Server Instance" > /var/www/html/index.html
-          - systemctl enable nginx --now
-          - echo "OK" > /var/www/html/index.html
-      EOF
+#!/bin/bash
+# Простейший скрипт запуска
+apt-get update && apt-get install -y nginx
+systemctl start nginx
+EOF
     }
 
     labels = merge(local.common_tags, {
@@ -52,38 +44,35 @@ resource "yandex_compute_instance_group" "web_ig" {
     })
   }
 
-  # ФИКСИРОВАННОЕ количество инстансов (без автоскейлинга)
   scale_policy {
     fixed_scale {
       size = var.web_server_count
     }
   }
 
-  # Распределение по зонам
   allocation_policy {
     zones = ["ru-central1-a", "ru-central1-b"]
   }
 
-  # Политика деплоя
   deploy_policy {
     max_unavailable = 1
-    max_expansion   = 0  # Устанавливаем 0, так как автоскейлинг отключен
+    max_expansion   = 0
+    startup_duration = 120
   }
 
-  # Health check для Instance Group
+  # САМЫЙ ПРОСТОЙ HEALTH CHECK
   health_check {
-    interval            = 10
-    timeout             = 7
-    unhealthy_threshold = 10
-    healthy_threshold   = 6
+    interval            = 5      # 2 секунды
+    timeout             = 4      # 1 секунда
+    unhealthy_threshold = 3      # 2 неудачи
+    healthy_threshold   = 2      # 1 успех достаточно!
     
-    http_options {
+    # Проверяем просто доступность порта 80 (TCP)
+    tcp_options {
       port = 80
-      path = "/health"
     }
   }
 
-  # Интеграция с Load Balancer
   load_balancer {
     target_group_name        = "${local.project_prefix}-web-target-group"
     target_group_description = "Target group for web instance group"
