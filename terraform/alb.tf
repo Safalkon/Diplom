@@ -1,6 +1,8 @@
 resource "yandex_alb_backend_group" "web" {
   name = "${local.project_prefix}-backend-group"
   
+  depends_on = [yandex_compute_instance_group.web_ig]
+
   http_backend {
     name             = "http-backend"
     port             = 80
@@ -38,6 +40,8 @@ resource "yandex_alb_http_router" "web" {
 resource "yandex_alb_virtual_host" "web" {
   name           = "default-host"
   http_router_id = yandex_alb_http_router.web.id
+
+  depends_on = [yandex_alb_backend_group.web]
   
   # Единственный маршрут для всех запросов
   route {
