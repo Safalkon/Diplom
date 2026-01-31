@@ -9,10 +9,10 @@ resource "yandex_alb_backend_group" "web" {
     target_group_ids = [yandex_compute_instance_group.web_ig.load_balancer[0].target_group_id]
     
     healthcheck {
-      timeout             = "1s"    # Минимум
-      interval            = "2s"    # Минимум
-      healthy_threshold   = 1       # Один успех достаточно
-      unhealthy_threshold = 2       # Две неудачи подряд
+      timeout             = "3s"    # Минимум
+      interval            = "5s"    # Минимум
+      healthy_threshold   = 2       # Один успех достаточно
+      unhealthy_threshold = 3       # Две неудачи подряд
       
       stream_healthcheck {
         send    = "PING\n"

@@ -1,6 +1,34 @@
+# Сервисный аккаунт для Instance Group
+resource "yandex_iam_service_account" "ig_sa" {
+  name        = "${local.project_prefix}-ig-sa"
+  description = "Service account for Instance Group"
+  folder_id   = var.yc_folder_id
+}
+
+# Права для управления ВМ
+resource "yandex_resourcemanager_folder_iam_member" "compute_editor" {
+  folder_id = var.yc_folder_id
+  role      = "compute.editor"
+  member    = "serviceAccount:${yandex_iam_service_account.ig_sa.id}"
+}
+
+# Права для управления VPC
+resource "yandex_resourcemanager_folder_iam_member" "vpc_user" {
+  folder_id = var.yc_folder_id
+  role      = "vpc.user"
+  member    = "serviceAccount:${yandex_iam_service_account.ig_sa.id}"
+}
+
+# Права для управления Load Balancer
+resource "yandex_resourcemanager_folder_iam_member" "load_balancer_editor" {
+  folder_id = var.yc_folder_id
+  role      = "alb.editor"
+  member    = "serviceAccount:${yandex_iam_service_account.ig_sa.id}"
+}
+
 resource "yandex_compute_instance_group" "web_ig" {
   name               = "${local.project_prefix}-web-ig"
-  service_account_id = var.service_account_id
+  service_account_id = yandex_iam_service_account.ig_sa.id
   deletion_protection = false
 
   instance_template {
@@ -78,7 +106,11 @@ EOF
 
   depends_on = [
     yandex_vpc_subnet.private_app,
-    yandex_vpc_security_group.web
+    yandex_vpc_security_group.web,
+    yandex_iam_service_account.ig_sa,
+    yandex_resourcemanager_folder_iam_member.compute_editor,
+    yandex_resourcemanager_folder_iam_member.vpc_user,
+    yandex_resourcemanager_folder_iam_member.load_balancer_editor
   ]
 
   labels = local.common_tags
