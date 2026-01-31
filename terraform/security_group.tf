@@ -22,7 +22,7 @@ resource "yandex_vpc_security_group" "bastion" {
   }
 }
 
-# Security Group for Web Servers (упрощенная версия)
+# Security Group for Web Servers
 resource "yandex_vpc_security_group" "web" {
   name        = "${local.project_prefix}-web-sg"
   description = "Security group for web servers"
@@ -33,9 +33,23 @@ resource "yandex_vpc_security_group" "web" {
   })
   
   ingress {
+    protocol          = "TCP"
+    description       = "HTTP from ALB"
+    security_group_id = yandex_vpc_security_group.alb.id
+    port              = 80
+  }
+  
+  ingress {
     protocol       = "TCP"
-    description    = "HTTP from anywhere"
-    v4_cidr_blocks = ["0.0.0.0/0"]
+    description    = "HTTP from internal network"
+    v4_cidr_blocks = ["10.0.0.0/16"]
+    port           = 80
+  }
+  
+  ingress {
+    protocol       = "TCP"
+    description    = "Health checks from Yandex Cloud"
+    v4_cidr_blocks = ["198.18.235.0/24", "198.18.248.0/24"]
     port           = 80
   }
   
@@ -44,6 +58,13 @@ resource "yandex_vpc_security_group" "web" {
     description       = "SSH from bastion"
     security_group_id = yandex_vpc_security_group.bastion.id
     port              = 22
+  }
+  
+  ingress {
+    protocol          = "TCP"
+    description       = "Zabbix agent"
+    security_group_id = yandex_vpc_security_group.zabbix.id
+    port              = 10050
   }
   
   egress {
@@ -75,6 +96,13 @@ resource "yandex_vpc_security_group" "zabbix" {
     description       = "SSH from bastion"
     security_group_id = yandex_vpc_security_group.bastion.id
     port              = 22
+  }
+  
+  ingress {
+    protocol       = "TCP"
+    description    = "Zabbix agents"
+    v4_cidr_blocks = ["10.0.0.0/16"]
+    port           = 10051
   }
   
   egress {
@@ -170,33 +198,16 @@ resource "yandex_vpc_security_group" "alb" {
     port           = 443
   }
   
-  egress {
-    protocol          = "ANY"
-    description       = "Allow all outbound to web servers"
-    security_group_id = yandex_vpc_security_group.web.id
-  }
-  
-  egress {
-    protocol       = "ANY"
-    description    = "Allow all outbound to internet"
-    v4_cidr_blocks = ["0.0.0.0/0"]
-  }
   ingress {
     protocol       = "TCP"
     description    = "Health checks from Yandex Cloud"
     v4_cidr_blocks = ["198.18.235.0/24", "198.18.248.0/24"]
-    port           = 80
-  }
-  
-  egress {
-    protocol          = "ANY"
-    description       = "Allow all outbound to web servers"
-    security_group_id = yandex_vpc_security_group.web.id
+    port           = 30080
   }
   
   egress {
     protocol       = "ANY"
-    description    = "Allow all outbound to internet"
+    description    = "Allow all outbound"
     v4_cidr_blocks = ["0.0.0.0/0"]
   }
 }

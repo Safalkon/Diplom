@@ -128,3 +128,18 @@ output "internal_ips_for_ansible" {
   }
   sensitive = false
 }
+output "alb_target_group_id" {
+  description = "ALB Target Group ID"
+  value       = try(yandex_alb_target_group.web.id, null)
+}
+
+output "alb_target_group_targets" {
+  description = "Targets in ALB Target Group"
+  value = try([
+    for target in yandex_alb_target_group.web.target :
+    {
+      subnet_id  = target.subnet_id
+      ip_address = target.ip_address
+    }
+  ], [])
+}
