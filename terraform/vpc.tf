@@ -1,7 +1,7 @@
 # VPC Network
 resource "yandex_vpc_network" "main" {
   name        = "${local.project_prefix}-vpc"
-  description = "Main VPC for diploma project"
+  description = "Main VPC for diplom project"
   labels      = local.common_tags
 }
 
@@ -17,7 +17,6 @@ resource "yandex_vpc_subnet" "public" {
     )
   ]
   zone           = each.key
-  route_table_id = yandex_vpc_route_table.nat_route.id
   
   labels = merge(local.common_tags, {
     subnettype = "public"
@@ -37,6 +36,7 @@ resource "yandex_vpc_subnet" "private_app" {
     )
   ]
   zone           = each.key
+  route_table_id = yandex_vpc_route_table.nat_route.id 
   
   labels = merge(local.common_tags, {
     subnettype = "private-app"
@@ -56,6 +56,7 @@ resource "yandex_vpc_subnet" "private_data" {
     )
   ]
   zone           = each.key
+  route_table_id = yandex_vpc_route_table.nat_route.id
   
   labels = merge(local.common_tags, {
     subnettype = "private-data"

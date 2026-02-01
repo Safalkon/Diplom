@@ -60,9 +60,36 @@ resource "yandex_compute_instance_group" "web_ig" {
     metadata = {
       ssh-keys = "${var.vm_user}:${var.ssh_public_key}"
       user-data = <<-EOF
-apt-get update && apt-get install -y nginx
-systemctl start nginx
-EOF
+        #cloud-config
+        package_update: true
+        packages:
+          - nginx
+          - git
+        
+        write_files:
+          - path: /var/www/html/index.html
+            content: |
+              <!DOCTYPE html>
+              <html>
+              <head>
+                  <title>Netology Diplom Project</title>
+                  <style>
+                      body { font-family: Arial; text-align: center; padding: 50px; }
+                      h1 { color: #0066cc; }
+                  </style>
+              </head>
+              <body>
+                  <h1>Netology Diplom - High Availability Website</h1>
+                  <p>Server: $(hostname)</p>
+                  <p>Zone: $(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone)</p>
+              </body>
+              </html>
+        runcmd:
+          - systemctl start nginx
+          - systemctl enable nginx
+          - sed -i "s/\$(hostname)/$(hostname)/g" /var/www/html/index.html
+          - sed -i "s/\$(curl -s http:\/\/169.254.169.254\/latest\/meta-data\/placement\/availability-zone)/$(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone)/g" /var/www/html/index.html
+      EOF
     }
 
     labels = merge(local.common_tags, {
