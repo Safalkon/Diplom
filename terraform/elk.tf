@@ -20,10 +20,13 @@ resource "yandex_compute_instance" "elasticsearch" {
   }
   
   network_interface {
-    subnet_id          = yandex_vpc_subnet.private_data.id
+    subnet_id = yandex_vpc_subnet.private_data["ru-central1-a"].id
     security_group_ids = [yandex_vpc_security_group.elasticsearch.id]
     nat                = false  # No public IP
-    ip_address         = cidrhost(var.private_data_subnet_cidr, 10)
+    ip_address = cidrhost(
+      yandex_vpc_subnet.private_data["ru-central1-a"].v4_cidr_blocks[0], 
+      10
+    )
   }
   
   scheduling_policy {
@@ -35,13 +38,12 @@ resource "yandex_compute_instance" "elasticsearch" {
   }
   
   labels = merge(local.common_tags, {
-    Role = "elasticsearch"
+    role = "elasticsearch"
   })
   
   depends_on = [
     yandex_vpc_subnet.private_data,
     yandex_vpc_security_group.elasticsearch,
-    yandex_vpc_subnet_route_table_binding.private_data
   ]
 }
 
@@ -67,7 +69,7 @@ resource "yandex_compute_instance" "kibana" {
   }
   
   network_interface {
-    subnet_id          = yandex_vpc_subnet.public.id
+    subnet_id = yandex_vpc_subnet.public["ru-central1-a"].id
     security_group_ids = [yandex_vpc_security_group.kibana.id]
     nat                = true  # Public IP for web access
   }
@@ -81,7 +83,7 @@ resource "yandex_compute_instance" "kibana" {
   }
   
   labels = merge(local.common_tags, {
-    Role = "kibana"
+    role = "kibana"
   })
   
   depends_on = [

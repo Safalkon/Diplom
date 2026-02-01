@@ -24,31 +24,6 @@ provider "yandex" {
   zone      = var.yc_zone
 }
 
-# Включение всех модулей
-module "compute" {
-  source = "./compute"
-  providers = {
-    yandex = yandex
-  }
-}
-
-module "network" {
-  source = "./network"
-  providers = {
-    yandex = yandex
-  }
-}
-
-module "loadbalancer" {
-  source = "./loadbalancer"
-  providers = {
-    yandex = yandex
-  }
-}
-
-module "data" {
-  source = "./data"
-  providers = {
-    yandex = yandex
-  }
+data "yandex_compute_image" "ubuntu" {
+  family = "ubuntu-2404-lts-oslogin"
 }

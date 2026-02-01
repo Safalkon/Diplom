@@ -1,10 +1,3 @@
-terraform {
-  required_providers {
-    yandex = {
-      source = "yandex-cloud/yandex"
-    }
-  }
-}
 # Security Group for Bastion
 resource "yandex_vpc_security_group" "bastion" {
   name        = "${local.project_prefix}-bastion-sg"
@@ -12,20 +5,19 @@ resource "yandex_vpc_security_group" "bastion" {
   network_id  = yandex_vpc_network.main.id
   
   labels = merge(local.common_tags, {
-    Component = "security-group"
-    Role      = "bastion"
+    role = "bastion"
   })
   
   ingress {
     protocol       = "TCP"
-    description    = "SSH access from anywhere"
+    description    = "SSH from internet"
     v4_cidr_blocks = ["0.0.0.0/0"]
     port           = 22
   }
   
   egress {
     protocol       = "ANY"
-    description    = "Allow all outbound traffic"
+    description    = "Allow all outbound"
     v4_cidr_blocks = ["0.0.0.0/0"]
   }
 }
@@ -37,14 +29,27 @@ resource "yandex_vpc_security_group" "web" {
   network_id  = yandex_vpc_network.main.id
   
   labels = merge(local.common_tags, {
-    Component = "security-group"
-    Role      = "web"
+    role = "web"
   })
   
   ingress {
+    protocol          = "TCP"
+    description       = "HTTP from ALB"
+    security_group_id = yandex_vpc_security_group.alb.id
+    port              = 80
+  }
+  
+  ingress {
     protocol       = "TCP"
-    description    = "HTTP from anywhere (will be restricted to ALB)"
-    v4_cidr_blocks = ["0.0.0.0/0"]
+    description    = "HTTP from internal network"
+    v4_cidr_blocks = ["10.0.0.0/16"]
+    port           = 80
+  }
+  
+  ingress {
+    protocol       = "TCP"
+    description    = "Health checks from Yandex Cloud"
+    v4_cidr_blocks = ["198.18.235.0/24", "198.18.248.0/24"]
     port           = 80
   }
   
@@ -56,61 +61,15 @@ resource "yandex_vpc_security_group" "web" {
   }
   
   ingress {
-    protocol       = "TCP"
-    description    = "Zabbix agent"
-    v4_cidr_blocks = ["10.0.0.0/16"]  # From monitoring subnet
-    port           = 10050
-  }
-  
-  egress {
-    protocol       = "ANY"
-    description    = "Allow all outbound traffic"
-    v4_cidr_blocks = ["0.0.0.0/0"]
-  }
-}
-
-# Security Group for Elasticsearch
-resource "yandex_vpc_security_group" "elasticsearch" {
-  name        = "${local.project_prefix}-elasticsearch-sg"
-  description = "Security group for Elasticsearch"
-  network_id  = yandex_vpc_network.main.id
-  
-  labels = merge(local.common_tags, {
-    Component = "security-group"
-    Role      = "elasticsearch"
-  })
-  
-  ingress {
-    protocol       = "TCP"
-    description    = "Elasticsearch HTTP API"
-    v4_cidr_blocks = ["10.0.0.0/16"]  # Allow from entire VPC
-    port           = 9200
-  }
-  
-  ingress {
-    protocol       = "TCP"
-    description    = "Elasticsearch transport"
-    v4_cidr_blocks = ["10.0.0.0/16"]
-    port           = 9300
-  }
-  
-  ingress {
     protocol          = "TCP"
-    description       = "SSH from bastion"
-    security_group_id = yandex_vpc_security_group.bastion.id
-    port              = 22
-  }
-  
-  ingress {
-    protocol       = "TCP"
-    description    = "Zabbix agent"
-    v4_cidr_blocks = ["10.0.0.0/16"]
-    port           = 10050
+    description       = "Zabbix agent"
+    security_group_id = yandex_vpc_security_group.zabbix.id
+    port              = 10050
   }
   
   egress {
     protocol       = "ANY"
-    description    = "Allow all outbound traffic"
+    description    = "Allow all outbound"
     v4_cidr_blocks = ["0.0.0.0/0"]
   }
 }
@@ -122,22 +81,14 @@ resource "yandex_vpc_security_group" "zabbix" {
   network_id  = yandex_vpc_network.main.id
   
   labels = merge(local.common_tags, {
-    Component = "security-group"
-    Role      = "zabbix"
+    role = "zabbix"
   })
   
   ingress {
     protocol       = "TCP"
-    description    = "Zabbix web UI"
+    description    = "HTTP from internet"
     v4_cidr_blocks = ["0.0.0.0/0"]
     port           = 80
-  }
-  
-  ingress {
-    protocol       = "TCP"
-    description    = "Zabbix web UI HTTPS"
-    v4_cidr_blocks = ["0.0.0.0/0"]
-    port           = 443
   }
   
   ingress {
@@ -149,14 +100,45 @@ resource "yandex_vpc_security_group" "zabbix" {
   
   ingress {
     protocol       = "TCP"
-    description    = "Zabbix server port"
+    description    = "Zabbix agents"
     v4_cidr_blocks = ["10.0.0.0/16"]
     port           = 10051
   }
   
   egress {
     protocol       = "ANY"
-    description    = "Allow all outbound traffic"
+    description    = "Allow all outbound"
+    v4_cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+# Security Group for Elasticsearch
+resource "yandex_vpc_security_group" "elasticsearch" {
+  name        = "${local.project_prefix}-elasticsearch-sg"
+  description = "Security group for Elasticsearch"
+  network_id  = yandex_vpc_network.main.id
+  
+  labels = merge(local.common_tags, {
+    role = "elasticsearch"
+  })
+  
+  ingress {
+    protocol       = "TCP"
+    description    = "Elasticsearch HTTP"
+    v4_cidr_blocks = ["10.0.0.0/16"]
+    port           = 9200
+  }
+  
+  ingress {
+    protocol          = "TCP"
+    description       = "SSH from bastion"
+    security_group_id = yandex_vpc_security_group.bastion.id
+    port              = 22
+  }
+  
+  egress {
+    protocol       = "ANY"
+    description    = "Allow all outbound"
     v4_cidr_blocks = ["0.0.0.0/0"]
   }
 }
@@ -168,8 +150,7 @@ resource "yandex_vpc_security_group" "kibana" {
   network_id  = yandex_vpc_network.main.id
   
   labels = merge(local.common_tags, {
-    Component = "security-group"
-    Role      = "kibana"
+    role = "kibana"
   })
   
   ingress {
@@ -186,16 +167,9 @@ resource "yandex_vpc_security_group" "kibana" {
     port              = 22
   }
   
-  ingress {
-    protocol       = "TCP"
-    description    = "Zabbix agent"
-    v4_cidr_blocks = ["10.0.0.0/16"]
-    port           = 10050
-  }
-  
   egress {
     protocol       = "ANY"
-    description    = "Allow all outbound traffic"
+    description    = "Allow all outbound"
     v4_cidr_blocks = ["0.0.0.0/0"]
   }
 }

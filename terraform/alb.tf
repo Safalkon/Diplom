@@ -1,54 +1,52 @@
-terraform {
-  required_providers {
-    yandex = {
-      source = "yandex-cloud/yandex"
-    }
-  }
-}
-# Target Group
+# Создаём ALB Target Group вручную
 resource "yandex_alb_target_group" "web" {
-  name = "${local.project_prefix}-target-group"
-  
+  name = "${local.project_prefix}-alb-target-group"
+
+  # Динамически добавляем targets из Instance Group
   dynamic "target" {
-    for_each = yandex_compute_instance.web
-    
+    for_each = yandex_compute_instance_group.web_ig.instances
     content {
       subnet_id  = target.value.network_interface[0].subnet_id
       ip_address = target.value.network_interface[0].ip_address
     }
   }
+
+  depends_on = [yandex_compute_instance_group.web_ig]
   
   labels = local.common_tags
 }
 
-# Backend Group с health check
+# Backend Group для ALB
 resource "yandex_alb_backend_group" "web" {
   name = "${local.project_prefix}-backend-group"
-  
+
   http_backend {
     name             = "http-backend"
     port             = 80
     target_group_ids = [yandex_alb_target_group.web.id]
     
     healthcheck {
-      timeout             = "10s"
-      interval            = "2s"
-      healthy_threshold   = 5
+      timeout             = "3s"
+      interval            = "5s"
+      healthy_threshold   = 2
       unhealthy_threshold = 3
-      
       http_healthcheck {
         path = "/"
       }
     }
+    load_balancing_config {
+      panic_threshold                = 50
+      locality_aware_routing_percent = 50
+    }
   }
+  depends_on = [yandex_alb_target_group.web]
   
   labels = local.common_tags
 }
 
 # HTTP Router
 resource "yandex_alb_http_router" "web" {
-  name = "${local.project_prefix}-http-router"
-  
+  name   = "${local.project_prefix}-http-router"
   labels = local.common_tags
 }
 
@@ -56,7 +54,7 @@ resource "yandex_alb_http_router" "web" {
 resource "yandex_alb_virtual_host" "web" {
   name           = "default-host"
   http_router_id = yandex_alb_http_router.web.id
-  
+
   route {
     name = "default-route"
     http_route {
@@ -66,17 +64,23 @@ resource "yandex_alb_virtual_host" "web" {
       }
     }
   }
+  
+  depends_on = [yandex_alb_backend_group.web]
 }
 
 # Application Load Balancer
 resource "yandex_alb_load_balancer" "web" {
-  name               = "${local.project_prefix}-alb"
-  network_id         = yandex_vpc_network.main.id
+  name       = "${local.project_prefix}-alb"
+  network_id = yandex_vpc_network.main.id
   
   allocation_policy {
     location {
-      zone_id   = var.yc_zone
-      subnet_id = yandex_vpc_subnet.public.id
+      zone_id   = "ru-central1-a"
+      subnet_id = yandex_vpc_subnet.public["ru-central1-a"].id
+    }
+    location {
+      zone_id   = "ru-central1-b"
+      subnet_id = yandex_vpc_subnet.public["ru-central1-b"].id
     }
   }
   
@@ -97,10 +101,10 @@ resource "yandex_alb_load_balancer" "web" {
     }
   }
   
+  security_group_ids = [yandex_vpc_security_group.alb.id]
   labels = local.common_tags
   
   depends_on = [
-    yandex_vpc_subnet.public,
-    yandex_alb_target_group.web
+    yandex_alb_virtual_host.web
   ]
 }

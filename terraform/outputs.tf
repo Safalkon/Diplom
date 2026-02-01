@@ -19,27 +19,38 @@ output "kibana_public_ip" {
   value       = try(yandex_compute_instance.kibana.network_interface[0].nat_ip_address, null)
 }
 
-output "web_servers" {
-  description = "Internal IP addresses and FQDNs of web servers"
+# Instance Group Outputs
+output "instance_group_info" {
+  description = "Information about instance group"
   value = {
-    for name, vm in yandex_compute_instance.web :
-    name => {
-      internal_ip = vm.network_interface[0].ip_address
-      fqdn        = vm.hostname
-      zone        = vm.zone
-      subnet      = vm.network_interface[0].subnet_id
-    }
+    id            = try(yandex_compute_instance_group.web_ig.id, null)
+    name          = try(yandex_compute_instance_group.web_ig.name, null)
+    status        = try(yandex_compute_instance_group.web_ig.status, null)
+    target_group_id = try(yandex_compute_instance_group.web_ig.load_balancer[0].target_group_id, null)
   }
+}
+
+output "instance_group_instances" {
+  description = "Instances in the instance group"
+  value = try([
+    for instance in yandex_compute_instance_group.web_ig.instances : {
+      name         = instance.name
+      status       = instance.status
+      zone_id      = instance.zone_id
+      fqdn         = instance.fqdn
+      network_interface = instance.network_interface
+    }
+  ], [])
 }
 
 output "web_server_distribution" {
   description = "Web server distribution across zones"
   value = {
-    for zone in local.web_server_zones :
-    zone => [
-      for name, vm in yandex_compute_instance.web :
-      name if vm.zone == zone
-    ]
+    for zone in ["ru-central1-a", "ru-central1-b"] :
+    zone => try([
+      for instance in yandex_compute_instance_group.web_ig.instances :
+      instance.name if instance.zone_id == zone
+    ], [])
   }
 }
 
@@ -52,10 +63,13 @@ output "fqdn_list" {
   description = "All FQDN names for Ansible inventory"
   value = {
     bastion       = try(yandex_compute_instance.bastion.hostname, null)
-    web_servers   = try([for vm in yandex_compute_instance.web : vm.hostname], [])
     zabbix        = try(yandex_compute_instance.zabbix.hostname, null)
     elasticsearch = try(yandex_compute_instance.elasticsearch.hostname, null)
     kibana        = try(yandex_compute_instance.kibana.hostname, null)
+    instance_group_instances = try([
+      for instance in yandex_compute_instance_group.web_ig.instances : 
+      instance.fqdn
+    ], [])
   }
 }
 
@@ -69,9 +83,63 @@ output "vpc_info" {
   value = {
     vpc_id = try(yandex_vpc_network.main.id, null)
     subnets = {
-      public       = try(yandex_vpc_subnet.public.id, null)
-      private_app  = try(yandex_vpc_subnet.private_app.id, null)
-      private_data = try(yandex_vpc_subnet.private_data.id, null)
+      public = try(
+        { for k, v in yandex_vpc_subnet.public : k => {
+          id          = v.id
+          cidr_blocks = v.v4_cidr_blocks
+          zone        = v.zone
+        }},
+        null
+      )
+      
+      private_app = try(
+        { for k, v in yandex_vpc_subnet.private_app : k => {
+          id          = v.id
+          cidr_blocks = v.v4_cidr_blocks
+          zone        = v.zone
+        }},
+        null
+      )
+      
+      private_data = try(
+        { for k, v in yandex_vpc_subnet.private_data : k => {
+          id          = v.id
+          cidr_blocks = v.v4_cidr_blocks
+          zone        = v.zone
+        }},
+        null
+      )
     }
   }
+}
+
+# Output для получения внутренних IP всех инстансов для Ansible
+output "internal_ips_for_ansible" {
+  description = "Internal IP addresses for Ansible inventory"
+  value = {
+    bastion_internal = try(yandex_compute_instance.bastion.network_interface[0].ip_address, null)
+    zabbix_internal = try(yandex_compute_instance.zabbix.network_interface[0].ip_address, null)
+    elasticsearch_internal = try(yandex_compute_instance.elasticsearch.network_interface[0].ip_address, null)
+    kibana_internal = try(yandex_compute_instance.kibana.network_interface[0].ip_address, null)
+    web_servers_internal = try([
+      for instance in yandex_compute_instance_group.web_ig.instances :
+      instance.network_interface[0].ip_address
+    ], [])
+  }
+  sensitive = false
+}
+output "alb_target_group_id" {
+  description = "ALB Target Group ID"
+  value       = try(yandex_alb_target_group.web.id, null)
+}
+
+output "alb_target_group_targets" {
+  description = "Targets in ALB Target Group"
+  value = try([
+    for target in yandex_alb_target_group.web.target :
+    {
+      subnet_id  = target.subnet_id
+      ip_address = target.ip_address
+    }
+  ], [])
 }

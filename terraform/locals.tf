@@ -1,6 +1,7 @@
 locals {
   project_name   = "diplom"
   project_prefix = "${var.environment}-${local.project_name}"
+  web_server_zones = [var.yc_zone]
   
   # VM Specifications
   vm_specs = {
@@ -26,8 +27,8 @@ locals {
   
   # Common Tags
   common_tags = {
-    Project     = local.project_name
-    Environment = var.environment
-    ManagedBy   = "Terraform"
+    project     = local.project_name
+    environment = var.environment
+    managedby   = "safalkon"
   }
 }
