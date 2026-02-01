@@ -200,3 +200,53 @@ resource "yandex_vpc_security_group" "kibana" {
   }
 }
 
+# Security Group для ALB
+resource "yandex_vpc_security_group" "alb" {
+  name        = "${local.project_prefix}-alb-sg"
+  description = "Security group for Application Load Balancer"
+  network_id  = yandex_vpc_network.main.id
+  labels = merge(local.common_tags, {
+    role = "alb"
+  })
+  
+  # HTTP от клиентов
+  ingress {
+    protocol       = "TCP"
+    description= "HTTP from internet"
+    v4_cidr_blocks = ["0.0.0.0/0"]
+    port           = 80
+  }
+  
+  # HTTPS от клиентов
+  ingress {
+    protocol       = "TCP"
+    description    = "HTTPS from internet"
+    v4_cidr_blocks = ["0.0.0.0/0"]
+    port           = 443
+  }
+  
+  # Health checks от Yandex Cloud
+  ingress {
+    protocol       = "TCP"
+    description    = "Health checks from Yandex Cloud"
+    v4_cidr_blocks = ["198.18.235.0/24", "198.18.248.0/24"]
+    from_port      = 0
+    to_port        = 65535
+  }
+  
+  # Разрешаем ICMP (ping) для диагностики
+  ingress {
+    protocol       = "ICMP"
+    description    = "ICMP from anywhere"
+    v4_cidr_blocks = ["0.0.0.0/0"]
+  }
+  
+  # Весь исходящий трафик
+  egress {
+    protocol       = "ANY"
+    description    = "Allow all outbound"
+    v4_cidr_blocks = ["0.0.0.0/0"]
+    from_port      = 0
+    to_port        = 65535
+  }
+}
