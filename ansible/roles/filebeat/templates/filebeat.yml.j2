@@ -1,0 +1,50 @@
+# Filebeat Configuration
+# Managed by Ansible
+
+filebeat.inputs:
+- type: log
+  enabled: true
+  paths:
+    - /var/log/nginx/access.log
+  fields:
+    service: nginx
+    environment: {{ environment | default('diplom') }}
+  fields_under_root: true
+
+- type: log
+  enabled: true
+  paths:
+    - /var/log/nginx/error.log
+  fields:
+    service: nginx
+    log_level: error
+    environment: {{ environment | default('diplom') }}
+  fields_under_root: true
+
+# Optional: system logs
+- type: log
+  enabled: false
+  paths:
+    - /var/log/syslog
+
+filebeat.config.modules:
+  path: ${path.config}/modules.d/*.yml
+  reload.enabled: false
+
+# Output to Elasticsearch
+output.elasticsearch:
+  hosts: ["{{ elasticsearch_host }}:9200"]
+  username: "{{ elasticsearch_username | default('elastic') }}"
+  password: "{{ elasticsearch_password | default('changeme') }}"
+  index: "filebeat-%{[service]}-%{+yyyy.MM.dd}"
+
+# Enable monitoring
+monitoring.enabled: true
+
+# Logging
+logging.level: info
+logging.to_files: true
+logging.files:
+  path: /var/log/filebeat
+  name: filebeat.log
+  keepfiles: 7

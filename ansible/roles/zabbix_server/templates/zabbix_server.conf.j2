@@ -1,0 +1,57 @@
+# Zabbix Server Configuration
+# Managed by Ansible
+
+LogFile=/var/log/zabbix/zabbix_server.log
+LogFileSize=0
+DebugLevel=3
+
+PidFile=/var/run/zabbix/zabbix_server.pid
+
+DBHost=localhost
+DBName=zabbix
+DBUser=zabbix
+DBPassword={{ zabbix_db_password }}
+DBPort=5432
+
+# Java gateway (optional)
+# JavaGateway=127.0.0.1
+# JavaGatewayPort=10052
+# StartJavaPollers=5
+
+# SNMP trapper
+SNMPTrapperFile=/var/log/snmp_trap/snmptrap.log
+
+# Housekeeping
+HousekeepingFrequency=1
+
+# Cache size
+CacheSize=256M
+HistoryCacheSize=128M
+HistoryIndexCacheSize=64M
+TrendCacheSize=128M
+ValueCacheSize=256M
+
+# Timeout
+Timeout=30
+
+# Listen port
+ListenPort=10051
+
+# Start pollers
+StartPollers=20
+StartPollersUnreachable=10
+StartTrappers=15
+StartPingers=10
+StartDiscoverers=10
+StartHTTPPollers=5
+
+# Alert scripts
+AlertScriptsPath=/usr/lib/zabbix/alertscripts
+ExternalScripts=/usr/lib/zabbix/externalscripts
+
+# Log slow queries
+LogSlowQueries=3000
+
+# TLS (optional)
+# TLSCertFile=/etc/zabbix/ssl/zabbix.crt
+# TLSKeyFile=/etc/zabbix/ssl/zabbix.key

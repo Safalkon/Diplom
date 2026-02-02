@@ -1,0 +1,95 @@
+---
+- name: Add Zabbix repository
+  apt_repository:
+    repo: "deb https://repo.zabbix.com/zabbix/6.0/ubuntu {{ ansible_distribution_release }} main"
+    state: present
+    key: "https://repo.zabbix.com/zabbix-official-repo.key"
+
+- name: Install PostgreSQL
+  apt:
+    name:
+      - postgresql
+      - postgresql-contrib
+    state: present
+
+- name: Ensure PostgreSQL is running
+  service:
+    name: postgresql
+    state: started
+    enabled: yes
+
+- name: Create Zabbix database and user
+  become_user: postgres
+  postgresql_db:
+    name: zabbix
+    encoding: 'UTF8'
+    lc_collate: 'en_US.UTF-8'
+    lc_ctype: 'en_US.UTF-8'
+    template: 'template0'
+
+- name: Create Zabbix user with password
+  become_user: postgres
+  postgresql_user:
+    name: zabbix
+    password: "{{ zabbix_db_password }}"
+    encrypted: yes
+    role_attr_flags: "CREATEDB,NOLOGIN"
+
+- name: Load Zabbix SQL schema
+  command: >
+    zcat /usr/share/zabbix-sql-scripts/postgresql/server.sql.gz | sudo -u zabbix psql zabbix
+  args:
+    creates: /var/lib/postgresql/.zabbix_schema_loaded
+
+- name: Install Zabbix server, frontend, agent
+  apt:
+    name:
+      - zabbix-server-pgsql
+      - zabbix-frontend-php
+      - zabbix-apache-conf
+      - zabbix-sql-scripts
+      - zabbix-agent
+    state: present
+
+- name: Configure Zabbix server
+  template:
+    src: zabbix_server.conf.j2
+    dest: /etc/zabbix/zabbix_server.conf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart zabbix-server
+
+- name: Configure PHP settings for Zabbix frontend
+  lineinfile:
+    path: /etc/php/8.1/apache2/php.ini
+    regexp: '^;?\\s*{{ item.key }}'
+    line: '{{ item.key }} = {{ item.value }}'
+  with_items:
+    - { key: 'max_execution_time', value: '300' }
+    - { key: 'memory_limit', value: '256M' }
+    - { key: 'post_max_size', value: '32M' }
+    - { key: 'upload_max_filesize', value: '16M' }
+    - { key: 'max_input_time', value: '300' }
+    - { key: 'date.timezone', value: 'Europe/Moscow' }
+
+- name: Enable and start Apache
+  service:
+    name: apache2
+    state: started
+    enabled: yes
+
+- name: Enable and start Zabbix server
+  service:
+    name: zabbix-server
+    state: started
+    enabled: yes
+
+- name: Wait for Zabbix server to be ready
+  uri:
+    url: "http://localhost:8080"
+    status_code: 200
+  register: result
+  until: result.status == 200
+  retries: 30
+  delay: 5

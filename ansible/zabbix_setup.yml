@@ -1,0 +1,55 @@
+---
+- name: Add hosts to Zabbix monitoring
+  hosts: zabbix_server
+  gather_facts: no
+  tasks:
+    - name: Ensure Zabbix API is accessible
+      uri:
+        url: "http://localhost/zabbix/api_jsonrpc.php"
+        method: POST
+        body_format: json
+        body:
+          jsonrpc: "2.0"
+          method: "user.login"
+          params:
+            user: "{{ zabbix_admin_user }}"
+            password: "{{ zabbix_admin_password }}"
+          id: 1
+        status_code: 200
+      register: login_result
+      delegate_to: localhost
+
+    - name: Debug token
+      debug:
+        msg: "Token: {{ login_result.json.result }}"
+
+- name: Add web servers to Zabbix
+  hosts: web
+  gather_facts: yes
+  tasks:
+    - name: Register host in Zabbix via API (example)
+      uri:
+        url: "http://{{ zabbix_server_ip }}/zabbix/api_jsonrpc.php"
+        method: POST
+        body_format: json
+        body:
+          jsonrpc: "2.0"
+          method: "host.create"
+          params:
+            host: "{{ ansible_hostname }}"
+            interfaces:
+              - type: 1
+                main: 1
+                useip: 1
+                ip: "{{ ansible_default_ipv4.address }}"
+                dns: ""
+                port: "10050"
+            groups:
+              - groupid: "2"  # Linux servers group
+            templates:
+              - templateid: "10001"  # Template OS Linux
+        headers:
+          Content-Type: "application/json"
+        status_code: 200
+      delegate_to: localhost
+      when: false  # Disabled for now, need proper authentication

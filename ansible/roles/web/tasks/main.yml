@@ -1,0 +1,36 @@
+---
+- name: Ensure nginx is installed
+  apt:
+    name: nginx
+    state: present
+
+- name: Ensure nginx is running and enabled
+  service:
+    name: nginx
+    state: started
+    enabled: yes
+
+- name: Deploy custom index.html
+  copy:
+    src: index.html
+    dest: /var/www/html/index.html
+    owner: www-data
+    group: www-data
+    mode: '0644'
+  notify: reload nginx
+
+- name: Configure nginx access log format for JSON (optional)
+  lineinfile:
+    path: /etc/nginx/nginx.conf
+    regexp: '^\s*access_log\s+/var/log/nginx/access.log\s+main;'
+    line: '    access_log /var/log/nginx/access.log json;'
+    backup: yes
+  notify: reload nginx
+
+- name: Ensure log directories exist
+  file:
+    path: /var/log/nginx
+    state: directory
+    owner: www-data
+    group: www-data
+    mode: '0755'

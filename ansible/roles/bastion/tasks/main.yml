@@ -1,0 +1,33 @@
+---
+- name: Ensure fail2ban is installed
+  apt:
+    name: fail2ban
+    state: present
+
+- name: Configure fail2ban
+  copy:
+    src: jail.local
+    dest: /etc/fail2ban/jail.local
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart fail2ban
+
+- name: Ensure fail2ban is running
+  service:
+    name: fail2ban
+    state: started
+    enabled: yes
+
+- name: Install ansible (optional)
+  apt:
+    name: ansible
+    state: present
+
+- name: Create SSH config for internal hosts
+  template:
+    src: ssh_config.j2
+    dest: /home/{{ ansible_user }}/.ssh/config
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0600'

@@ -112,22 +112,6 @@ output "vpc_info" {
     }
   }
 }
-
-# Output для получения внутренних IP всех инстансов для Ansible
-output "internal_ips_for_ansible" {
-  description = "Internal IP addresses for Ansible inventory"
-  value = {
-    bastion_internal = try(yandex_compute_instance.bastion.network_interface[0].ip_address, null)
-    zabbix_internal = try(yandex_compute_instance.zabbix.network_interface[0].ip_address, null)
-    elasticsearch_internal = try(yandex_compute_instance.elasticsearch.network_interface[0].ip_address, null)
-    kibana_internal = try(yandex_compute_instance.kibana.network_interface[0].ip_address, null)
-    web_servers_internal = try([
-      for instance in yandex_compute_instance_group.web_ig.instances :
-      instance.network_interface[0].ip_address
-    ], [])
-  }
-  sensitive = false
-}
 output "alb_target_group_id" {
   description = "ALB Target Group ID"
   value       = try(yandex_alb_target_group.web.id, null)

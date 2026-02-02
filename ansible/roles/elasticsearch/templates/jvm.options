@@ -1,0 +1,27 @@
+## JVM configuration
+
+## Xms represents the initial size of total heap space
+## Xmx represents the maximum size of total heap space
+
+-Xms1g
+-Xmx1g
+
+## G1GC Configuration
+-XX:+UseG1GC
+-XX:MaxGCPauseMillis=400
+-XX:G1ReservePercent=25
+-XX:InitiatingHeapOccupancyPercent=30
+
+## Serialization filter
+-Djdk.serialFilter=!org.elasticsearch.*
+-Djdk.serialFilter=*
+
+## System properties
+-Dlog4j2.formatMsgNoLookups=true
+
+## Heap dump on memory error
+-XX:+HeapDumpOnOutOfMemoryError
+-XX:HeapDumpPath=/var/lib/elasticsearch
+
+## GC logging
+-Xlog:gc*,gc+age=trace,safepoint:file=/var/log/elasticsearch/gc.log:utctime,pid,tags:filecount=32,filesize=64m

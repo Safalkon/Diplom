@@ -1,0 +1,38 @@
+---
+- name: Install required packages
+  apt:
+    name:
+      - curl
+      - python3-boto3
+      - awscli
+    state: present
+
+- name: Create backup directory
+  file:
+    path: /backup
+    state: directory
+    mode: '0755'
+
+- name: Deploy backup script
+  template:
+    src: backup.sh.j2
+    dest: /usr/local/bin/backup.sh
+    mode: '0755'
+
+- name: Deploy systemd timer for backup
+  template:
+    src: backup.service.j2
+    dest: /etc/systemd/system/backup.service
+  notify: reload systemd
+
+- name: Deploy backup timer
+  template:
+    src: backup.timer.j2
+    dest: /etc/systemd/system/backup.timer
+  notify: reload systemd
+
+- name: Enable and start backup timer
+  systemd:
+    name: backup.timer
+    enabled: yes
+    state: started

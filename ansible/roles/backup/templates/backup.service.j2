@@ -1,0 +1,13 @@
+[Unit]
+Description=Backup service
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/backup.sh
+User=root
+Environment="AWS_ACCESS_KEY_ID={{ s3_access_key | default('') }}"
+Environment="AWS_SECRET_ACCESS_KEY={{ s3_secret_key | default('') }}"
+
+[Install]
+WantedBy=multi-user.target

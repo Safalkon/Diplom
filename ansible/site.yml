@@ -1,0 +1,39 @@
+---
+- name: Apply common configuration to all hosts
+  hosts: all
+  roles:
+    - common
+
+- name: Configure bastion host
+  hosts: bastion
+  roles:
+    - bastion
+
+- name: Configure web servers
+  hosts: web
+  roles:
+    - web
+    - zabbix_agent
+    - filebeat
+
+- name: Configure Zabbix server
+  hosts: zabbix_server
+  roles:
+    - zabbix_server
+
+- name: Configure Elasticsearch
+  hosts: elasticsearch
+  roles:
+    - elasticsearch
+    - zabbix_agent
+
+- name: Configure Kibana
+  hosts: kibana
+  roles:
+    - kibana
+    - zabbix_agent
+
+- name: Configure Zabbix agents on all monitored hosts
+  hosts: zabbix_agents
+  roles:
+    - zabbix_agent

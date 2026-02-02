@@ -1,0 +1,6 @@
+Host *.ru-central1.internal
+  User {{ ansible_user }}
+  IdentityFile ~/.ssh/id_rsa
+  ProxyCommand none
+  StrictHostKeyChecking no
+  UserKnownHostsFile /dev/null

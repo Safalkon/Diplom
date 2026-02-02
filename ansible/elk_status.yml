@@ -1,0 +1,28 @@
+---
+- name: Verify Elasticsearch and Kibana connectivity
+  hosts: elasticsearch
+  tasks:
+    - name: Check Elasticsearch health
+      uri:
+        url: "http://localhost:9200/_cluster/health"
+        return_content: yes
+      register: es_health
+      ignore_errors: yes
+
+    - name: Display Elasticsearch health
+      debug:
+        msg: "Elasticsearch health: {{ es_health.json.status }}"
+
+- name: Verify Kibana
+  hosts: kibana
+  tasks:
+    - name: Check Kibana status
+      uri:
+        url: "http://localhost:5601/api/status"
+        return_content: yes
+      register: kibana_status
+      ignore_errors: yes
+
+    - name: Display Kibana status
+      debug:
+        msg: "Kibana status: {{ kibana_status.json.status.overall.state }}"
