@@ -17,7 +17,13 @@ resource "yandex_vpc_security_group" "bastion" {
   
   egress {
     protocol       = "ANY"
-    description    = "Allow all outbound"
+    description    = "Allow outbound to internal networks"
+    v4_cidr_blocks = [var.vpc_cidr]
+  }
+
+  egress {
+    protocol       = "ANY"
+    description    = "Allow all outbound to internet"
     v4_cidr_blocks = ["0.0.0.0/0"]
   }
 }
@@ -90,6 +96,13 @@ resource "yandex_vpc_security_group" "zabbix" {
     v4_cidr_blocks = ["0.0.0.0/0"]
     port           = 80
   }
+
+  ingress {
+    protocol       = "TCP"
+    description    = "SSH from internet"
+    v4_cidr_blocks = ["0.0.0.0/0"]
+    port           = 22
+  }
   
   ingress {
     protocol          = "TCP"
@@ -158,6 +171,13 @@ resource "yandex_vpc_security_group" "kibana" {
     description    = "Kibana web UI"
     v4_cidr_blocks = ["0.0.0.0/0"]
     port           = 5601
+  }
+
+  ingress {
+    protocol       = "TCP"
+    description    = "SSH from internet"
+    v4_cidr_blocks = ["0.0.0.0/0"]
+    port           = 22
   }
   
   ingress {

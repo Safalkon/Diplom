@@ -8,7 +8,7 @@ all:
     bastion:
       hosts:
         diplom-diplom-bastion.ru-central1.internal:
-          ansible_host: 89.169.147.115
+          ansible_host: 51.250.85.130
     zabbix:
       hosts:
         zabbix.ru-central1.internal:
