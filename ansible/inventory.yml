@@ -2,48 +2,42 @@
 all:
   vars:
     ansible_user: safalkon
-    ansible_ssh_private_key_file: "~/.ssh/id_rsa"
-    # Bastion proxy for internal hosts
-    ansible_ssh_common_args: '-o ProxyCommand="ssh -W %h:%p -q safalkon@{{ bastion_host }}"'
+    ansible_ssh_private_key_file: "/home/safalkon/.ssh/id_ed25519"
+    ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
   children:
     bastion:
       hosts:
         diplom-diplom-bastion.ru-central1.internal:
-      vars:
-        ansible_host: "{{ bastion_public_ip }}"
-        ansible_ssh_common_args: ""  # No proxy for bastion itself
-    # Public hosts (have public IP)
-    public:
+          ansible_host: 89.169.147.115
+    zabbix:
       hosts:
-        diplom-diplom-bastion.ru-central1.internal:
         zabbix.ru-central1.internal:
+          ansible_host: 62.84.115.179
+    kibana:
+      hosts:
         kibana.ru-central1.internal:
-      vars:
-        ansible_connection: ssh
-    # Private hosts (accessed via bastion)
+          ansible_host: 93.77.187.245
     private:
       vars:
-        ansible_host: "{{ internal_ip }}"
-        bastion_host: "diplom-diplom-bastion.ru-central1.internal"
+        ansible_ssh_common_args: '-o StrictHostKeyChecking=no -o ProxyCommand="ssh -W %h:%p -q safalkon@diplom-diplom-bastion.ru-central1.internal"'
       children:
         web:
           hosts:
-            diplom-diplom-web-ig-1.ru-central1.internal:
-              internal_ip: 10.0.2.10  # Example, replace with actual
-            diplom-diplom-web-ig-2.ru-central1.internal:
-              internal_ip: 10.0.2.11
+            cl1agteqodo5jjn798fr-ekyn.ru-central1.internal:
+              ansible_host: 10.0.11.21
+            cl1agteqodo5jjn798fr-epit.ru-central1.internal:
+              ansible_host: 10.0.12.3
         elasticsearch:
           hosts:
             elasticsearch.ru-central1.internal:
-              internal_ip: 10.0.3.10
-    # Monitoring
+              ansible_host: 10.0.21.10
     zabbix_server:
       hosts:
         zabbix.ru-central1.internal:
     zabbix_agents:
       hosts:
-        diplom-diplom-web-ig-1.ru-central1.internal:
-        diplom-diplom-web-ig-2.ru-central1.internal:
+        cl1agteqodo5jjn798fr-ekyn.ru-central1.internal:
+        cl1agteqodo5jjn798fr-epit.ru-central1.internal:
         elasticsearch.ru-central1.internal:
         kibana.ru-central1.internal:
         diplom-diplom-bastion.ru-central1.internal:
@@ -59,4 +53,4 @@ all:
         kibana:
     backup:
       hosts:
-        diplom-diplom-bastion.ru-central1.internal:  # Use bastion as backup node
+        diplom-diplom-bastion.ru-central1.internal:

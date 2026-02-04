@@ -31,7 +31,21 @@ The inventory is defined in `inventory.yml` using FQDN names (`.ru-central1.inte
 
 ### Dynamic Inventory
 
-You can generate inventory from Terraform outputs using the script `scripts/generate_inventory.py` (to be created).
+You can generate inventory from Terraform outputs using the script `scripts/generate_inventory.py`. First, ensure you have terraform outputs in JSON format:
+
+```bash
+cd terraform
+terraform output -json > output.json
+```
+
+Then run the script:
+
+```bash
+cd ansible
+python3 scripts/generate_inventory.py > inventory.yml
+```
+
+The script will create an inventory with all hosts and groups based on Terraform outputs.
 
 ## Variables
 

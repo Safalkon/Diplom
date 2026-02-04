@@ -1,16 +1,19 @@
 ---
 - name: Apply common configuration to all hosts
   hosts: all
+  become: yes
   roles:
     - common
 
 - name: Configure bastion host
   hosts: bastion
+  become: yes
   roles:
     - bastion
 
 - name: Configure web servers
   hosts: web
+  become: yes
   roles:
     - web
     - zabbix_agent
@@ -18,22 +21,26 @@
 
 - name: Configure Zabbix server
   hosts: zabbix_server
+  become: yes
   roles:
     - zabbix_server
 
 - name: Configure Elasticsearch
   hosts: elasticsearch
+  become: yes
   roles:
     - elasticsearch
     - zabbix_agent
 
 - name: Configure Kibana
   hosts: kibana
+  become: yes
   roles:
     - kibana
     - zabbix_agent
 
 - name: Configure Zabbix agents on all monitored hosts
   hosts: zabbix_agents
+  become: yes
   roles:
     - zabbix_agent
