@@ -11,14 +11,11 @@ all:
     bastion:
       hosts:
         ${bastion_fqdn}:
-          ansible_host: ${bastion_public_ip}
-          internal_ip: ${bastion_internal_ip}
 
     web_servers:
       hosts:
 %{ for server in web_servers ~}
         ${server.fqdn}:
-          ansible_host: ${server.ip}
           zone: ${server.zone}
 %{ endfor ~}
       vars:
@@ -29,23 +26,18 @@ all:
     zabbix_server:
       hosts:
         ${zabbix_fqdn}:
-          ansible_host: ${zabbix_public_ip}
-          internal_ip: ${zabbix_internal_ip}
           zabbix_web_port: 80
           zabbix_server_port: 10051
 
     elasticsearch:
       hosts:
         ${elasticsearch_fqdn}:
-          ansible_host: ${elasticsearch_internal_ip}
           elasticsearch_port: 9200
           elasticsearch_cluster_name: diplom-cluster
 
     kibana:
       hosts:
         ${kibana_fqdn}:
-          ansible_host: ${kibana_public_ip}
-          internal_ip: ${kibana_internal_ip}
           kibana_port: 5601
 
     monitoring_agents:
