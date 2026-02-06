@@ -17,7 +17,7 @@ all:
       hosts:
 %{ for server in web_servers ~}
         ${server.fqdn}:
-          ansible_host: ${server.ip}
+          ansible_host: ${server.fqdn}
           zone: ${server.zone}
           ansible_ssh_common_args: '-o ProxyCommand="ssh -W %h:%p -q ${vm_user}@${bastion_public_ip}"'
 %{ endfor ~}
@@ -29,14 +29,14 @@ all:
     zabbix_server:
       hosts:
         ${zabbix_fqdn}:
-          ansible_host: ${zabbix_public_ip}
+          ansible_host: ${zabbix_fqdn}
           zabbix_web_port: 80
           zabbix_server_port: 10051
 
     elasticsearch_server:
       hosts:
         ${elasticsearch_fqdn}:
-          ansible_host: ${elasticsearch_internal_ip}
+          ansible_host: ${elasticsearch_fqdn}
           elasticsearch_port: 9200
           elasticsearch_cluster_name: diplom-cluster
           ansible_ssh_common_args: '-o ProxyCommand="ssh -W %h:%p -q ${vm_user}@${bastion_public_ip}"'
@@ -44,7 +44,7 @@ all:
     kibana_server:
       hosts:
         ${kibana_fqdn}:
-          ansible_host: ${kibana_public_ip}
+          ansible_host: ${kibana_fqdn}
           kibana_port: 5601
 
     monitoring_agents:

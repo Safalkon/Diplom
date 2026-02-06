@@ -1,0 +1,67 @@
+---
+# Playbook для настройки веб-серверов и других компонентов
+
+- name: Setup Web Servers
+  hosts: web_servers
+  become: true
+  tasks:
+    - name: Ensure Nginx is installed
+      apt:
+        name: nginx
+        state: present
+
+    - name: Start and enable Nginx service
+      service:
+        name: nginx
+        state: started
+        enabled: true
+
+    - name: Deploy static website content
+      copy:
+        src: /path/to/local/static/files/
+        dest: /var/www/html/
+        owner: www-data
+        group: www-data
+        mode: '0755'
+
+- name: Setup Zabbix Agent
+  hosts: all_servers
+  become: true
+  tasks:
+    - name: Install Zabbix agent
+      apt:
+        name: zabbix-agent
+        state: present
+
+    - name: Configure Zabbix agent
+      template:
+        src: templates/zabbix_agentd.conf.j2
+        dest: /etc/zabbix/zabbix_agentd.conf
+
+    - name: Start and enable Zabbix agent service
+      service:
+        name: zabbix-agent
+        state: started
+        enabled: true
+
+- name: Setup Filebeat
+  hosts: web_servers
+  become: true
+  tasks:
+    - name: Install Filebeat
+      apt:
+        name: filebeat
+        state: present
+
+    - name: Configure Filebeat
+      template:
+        src: templates/filebeat.yml.j2
+        dest: /etc/filebeat/filebeat.yml
+
+    - name: Start and enable Filebeat service
+      service:
+        name: filebeat
+        state: started
+        enabled: true
+
+# Добавьте дополнительные задачи для настройки других компонентов по мере необходимости
