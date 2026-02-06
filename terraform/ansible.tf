@@ -4,18 +4,18 @@ resource "local_file" "ansible_inventory_ini" {
   content = templatefile("${path.module}/templates/inventory.ini.tpl", {
     bastion_public_ip = try(yandex_compute_instance.bastion.network_interface[0].nat_ip_address, "")
     bastion_internal_ip = try(yandex_compute_instance.bastion.network_interface[0].ip_address, "")
-    bastion_fqdn = try(yandex_compute_instance.bastion.hostname, "")
+    bastion_fqdn = try(yandex_compute_instance.bastion.fqdn, "")
     
     zabbix_public_ip = try(yandex_compute_instance.zabbix.network_interface[0].nat_ip_address, "")
     zabbix_internal_ip = try(yandex_compute_instance.zabbix.network_interface[0].ip_address, "")
-    zabbix_fqdn = try(yandex_compute_instance.zabbix.hostname, "")
+    zabbix_fqdn = try(yandex_compute_instance.zabbix.fqdn, "")
     
     elasticsearch_internal_ip = try(yandex_compute_instance.elasticsearch.network_interface[0].ip_address, "")
-    elasticsearch_fqdn = try(yandex_compute_instance.elasticsearch.hostname, "")
+    elasticsearch_fqdn = try(yandex_compute_instance.elasticsearch.fqdn, "")
     
     kibana_public_ip = try(yandex_compute_instance.kibana.network_interface[0].nat_ip_address, "")
     kibana_internal_ip = try(yandex_compute_instance.kibana.network_interface[0].ip_address, "")
-    kibana_fqdn = try(yandex_compute_instance.kibana.hostname, "")
+    kibana_fqdn = try(yandex_compute_instance.kibana.fqdn, "")
     
     web_servers = try([
       for instance in yandex_compute_instance_group.web_ig.instances : {
@@ -42,18 +42,18 @@ resource "local_file" "ansible_inventory_yaml" {
   content = templatefile("${path.module}/templates/inventory.yml.tpl", {
     bastion_public_ip = try(yandex_compute_instance.bastion.network_interface[0].nat_ip_address, "")
     bastion_internal_ip = try(yandex_compute_instance.bastion.network_interface[0].ip_address, "")
-    bastion_fqdn = try(yandex_compute_instance.bastion.hostname, "")
+    bastion_fqdn = try(yandex_compute_instance.bastion.fqdn, "")
     
     zabbix_public_ip = try(yandex_compute_instance.zabbix.network_interface[0].nat_ip_address, "")
     zabbix_internal_ip = try(yandex_compute_instance.zabbix.network_interface[0].ip_address, "")
-    zabbix_fqdn = try(yandex_compute_instance.zabbix.hostname, "")
+    zabbix_fqdn = try(yandex_compute_instance.zabbix.fqdn, "")
     
     elasticsearch_internal_ip = try(yandex_compute_instance.elasticsearch.network_interface[0].ip_address, "")
-    elasticsearch_fqdn = try(yandex_compute_instance.elasticsearch.hostname, "")
+    elasticsearch_fqdn = try(yandex_compute_instance.elasticsearch.fqdn, "")
     
     kibana_public_ip = try(yandex_compute_instance.kibana.network_interface[0].nat_ip_address, "")
     kibana_internal_ip = try(yandex_compute_instance.kibana.network_interface[0].ip_address, "")
-    kibana_fqdn = try(yandex_compute_instance.kibana.hostname, "")
+    kibana_fqdn = try(yandex_compute_instance.kibana.fqdn, "")
     
     web_servers = try([
       for instance in yandex_compute_instance_group.web_ig.instances : {

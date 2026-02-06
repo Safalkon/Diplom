@@ -2,21 +2,21 @@
 # Date: ${timestamp()}
 
 [bastion]
-${bastion_fqdn} ansible_user=${vm_user}
+${bastion_fqdn} ansible_host=${bastion_public_ip} ansible_user=${vm_user}
 
 [web_servers]
 %{ for server in web_servers ~}
-${server.fqdn} ansible_user=${vm_user} zone=${server.zone}
+${server.fqdn} ansible_host=${server.ip} ansible_user=${vm_user} zone=${server.zone} ansible_ssh_common_args='-o ProxyCommand="ssh -W %h:%p -q ${vm_user}@${bastion_public_ip}"'
 %{ endfor ~}
 
 [zabbix_server]
-${zabbix_fqdn} ansible_user=${vm_user}
+${zabbix_fqdn} ansible_host=${zabbix_public_ip} ansible_user=${vm_user}
 
-[elasticsearch]
-${elasticsearch_fqdn} ansible_user=${vm_user}
+[elasticsearch_server]
+${elasticsearch_fqdn} ansible_host=${elasticsearch_internal_ip} ansible_user=${vm_user} ansible_ssh_common_args='-o ProxyCommand="ssh -W %h:%p -q ${vm_user}@${bastion_public_ip}"'
 
-[kibana]
-${kibana_fqdn} ansible_user=${vm_user}
+[kibana_server]
+${kibana_fqdn} ansible_host=${kibana_public_ip} ansible_user=${vm_user}
 
 [monitoring_agents:children]
 web_servers
@@ -28,8 +28,8 @@ web_servers
 bastion
 web_servers
 zabbix_server
-elasticsearch
-kibana
+elasticsearch_server
+kibana_server
 
 [all_servers:vars]
 ansible_ssh_private_key_file=~/.ssh/id_ed25519

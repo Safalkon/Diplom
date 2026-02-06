@@ -1,0 +1,149 @@
+---
+# Playbook для проверки сетевых соединений между компонентами инфраструктуры
+
+- name: Test Internal Network Connectivity
+  hosts: all_servers
+  gather_facts: false
+  
+  tasks:
+    - name: Test connectivity to bastion
+      wait_for:
+        host: "{{ hostvars['diplom-bastion.ru-central1.internal'].ansible_default_ipv4.address | default(hostvars['diplom-bastion.ru-central1.internal'].inventory_hostname) }}"
+        port: 22
+        timeout: 5
+      when: "'bastion' not in group_names"
+      ignore_errors: true
+      register: bastion_connect
+    
+    - name: Display bastion connectivity status
+      debug:
+        msg: "Connectivity to bastion {{ 'OK' if bastion_connect is succeeded else 'FAILED' }} from {{ inventory_hostname }}"
+      when: "'bastion' not in group_names"
+
+- name: Test Web Servers Connectivity
+  hosts: web_servers
+  gather_facts: false
+  
+  tasks:
+    - name: Test connectivity to Elasticsearch
+      wait_for:
+        host: "{{ hostvars[groups['elasticsearch'][0]].ansible_default_ipv4.address | default(groups['elasticsearch'][0]) }}"
+        port: 9200
+        timeout: 5
+      ignore_errors: true
+      register: es_connect
+    
+    - name: Display Elasticsearch connectivity status
+      debug:
+        msg: "Connectivity to Elasticsearch {{ 'OK' if es_connect is succeeded else 'FAILED' }} from {{ inventory_hostname }}"
+    
+    - name: Test connectivity to Zabbix server
+      wait_for:
+        host: "{{ hostvars[groups['zabbix_server'][0]].ansible_default_ipv4.address | default(groups['zabbix_server'][0]) }}"
+        port: 10051
+        timeout: 5
+      ignore_errors: true
+      register: zabbix_connect
+    
+    - name: Display Zabbix connectivity status
+      debug:
+        msg: "Connectivity to Zabbix server {{ 'OK' if zabbix_connect is succeeded else 'FAILED' }} from {{ inventory_hostname }}"
+
+- name: Test Zabbix Server Connectivity
+  hosts: zabbix_server
+  gather_facts: false
+  
+  tasks:
+    - name: Test connectivity to web servers
+      shell: |
+        {% for web_host in groups['web_servers'] %}
+        echo "Testing {{ web_host }}:10050"
+        timeout 2 bash -c "echo > /dev/tcp/{{ hostvars[web_host].ansible_default_ipv4.address | default(web_host) }}/10050" 2>/dev/null && echo "OK" || echo "FAILED"
+        {% endfor %}
+      register: web_agents_connect
+    
+    - name: Display web agents connectivity status
+      debug:
+        msg: "Zabbix server connectivity to web agents:\n{{ web_agents_connect.stdout }}"
+
+- name: Test Elasticsearch Connectivity
+  hosts: elasticsearch_server
+  gather_facts: false
+  
+  tasks:
+    - name: Test self-connectivity
+      wait_for:
+        host: "{{ ansible_default_ipv4.address | default(inventory_hostname) }}"
+        port: 9200
+        timeout: 5
+      ignore_errors: true
+      register: self_connect
+    
+    - name: Display self-connectivity status
+      debug:
+        msg: "Elasticsearch self-connectivity {{ 'OK' if self_connect is succeeded else 'FAILED' }}"
+
+- name: Test Kibana Connectivity to Elasticsearch
+  hosts: kibana_server
+  gather_facts: false
+  
+  tasks:
+    - name: Test connectivity to Elasticsearch
+      wait_for:
+        host: "{{ hostvars[groups['elasticsearch_server'][0]].ansible_default_ipv4.address | default(groups['elasticsearch_server'][0]) }}"
+        port: 9200
+        timeout: 5
+      ignore_errors: true
+      register: kibana_es_connect
+    
+    - name: Display Elasticsearch connectivity status
+      debug:
+        msg: "Kibana connectivity to Elasticsearch {{ 'OK' if kibana_es_connect is succeeded else 'FAILED' }}"
+
+- name: Test ALB Connectivity (from bastion)
+  hosts: bastion
+  gather_facts: false
+  
+  tasks:
+    - name: Get ALB public IP from Terraform outputs
+      set_fact:
+        alb_public_ip: "{{ lookup('env', 'TF_ALB_PUBLIC_IP') | default('NOT_SET') }}"
+    
+    - name: Test ALB HTTP connectivity
+      uri:
+        url: "http://{{ alb_public_ip }}"
+        method: GET
+        timeout: 5
+      when: alb_public_ip != 'NOT_SET'
+      ignore_errors: true
+      register: alb_connect
+    
+    - name: Display ALB connectivity status
+      debug:
+        msg: "ALB connectivity {{ 'OK' if alb_connect.status == 200 else 'FAILED' }} (HTTP {{ alb_connect.status | default('N/A') }})"
+      when: alb_public_ip != 'NOT_SET'
+
+- name: Generate Network Test Summary
+  hosts: localhost
+  gather_facts: false
+  
+  tasks:
+    - name: Create network test summary
+      debug:
+        msg: |
+          === Сводка тестирования сети ===
+          
+          Критические соединения для проверки:
+          
+          1. Веб-сервера → Elasticsearch (порт 9200)
+          2. Веб-сервера → Zabbix Server (порт 10051)
+          3. Zabbix Server → Веб-сервера (порт 10050)
+          4. Kibana → Elasticsearch (порт 9200)
+          5. Все хосты → Bastion (порт 22)
+          6. Bastion → ALB (порт 80)
+          
+          Для запуска тестов сети выполните:
+            ansible-playbook -i inventory.ini network_test.yml
+          
+          Примечание: Для теста ALB необходимо установить переменную окружения TF_ALB_PUBLIC_IP
+            export TF_ALB_PUBLIC_IP=$(cd terraform && terraform output -raw alb_public_ip)

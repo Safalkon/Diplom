@@ -1,0 +1,170 @@
+---
+# Playbook для проверки установленных сервисов согласно требованиям дипломного проекта
+
+- name: Check Web Servers Configuration
+  hosts: web_servers
+  gather_facts: true
+  
+  tasks:
+    - name: Verify nginx installation
+      package:
+        name: nginx
+        state: present
+      check_mode: true
+      register: nginx_check
+    
+    - name: Display nginx check result
+      debug:
+        msg: "nginx {{ 'is installed' if nginx_check.changed == false else 'needs installation' }} on {{ inventory_hostname }}"
+    
+    - name: Check nginx service status
+      service:
+        name: nginx
+        state: started
+        enabled: true
+      check_mode: true
+      register: nginx_service
+    
+    - name: Display nginx service status
+      debug:
+        msg: "nginx service {{ 'is running and enabled' if nginx_service.changed == false else 'needs to be started/enabled' }} on {{ inventory_hostname }}"
+    
+    - name: Check web content directory
+      stat:
+        path: /var/www/html
+      register: web_dir
+    
+    - name: Display web directory status
+      debug:
+        msg: "Web directory /var/www/html {{ 'exists' if web_dir.stat.exists else 'does not exist' }} on {{ inventory_hostname }}"
+    
+    - name: Check if index.html exists
+      stat:
+        path: /var/www/html/index.html
+      register: index_file
+    
+    - name: Display index.html status
+      debug:
+        msg: "index.html {{ 'exists' if index_file.stat.exists else 'does not exist' }} on {{ inventory_hostname }}"
+
+- name: Check Zabbix Agent on Web Servers
+  hosts: web_servers
+  gather_facts: false
+  
+  tasks:
+    - name: Check if zabbix-agent is installed
+      package:
+        name: zabbix-agent
+        state: present
+      check_mode: true
+      register: zabbix_agent_check
+    
+    - name: Display zabbix-agent status
+      debug:
+        msg: "zabbix-agent {{ 'is installed' if zabbix_agent_check.changed == false else 'needs installation' }} on {{ inventory_hostname }}"
+
+- name: Check Filebeat on Web Servers
+  hosts: web_servers
+  gather_facts: false
+  
+  tasks:
+    - name: Check if filebeat is installed
+      package:
+        name: filebeat
+        state: present
+      check_mode: true
+      register: filebeat_check
+    
+    - name: Display filebeat status
+      debug:
+        msg: "filebeat {{ 'is installed' if filebeat_check.changed == false else 'needs installation' }} on {{ inventory_hostname }}"
+
+- name: Check Zabbix Server
+  hosts: zabbix_server
+  gather_facts: false
+  
+  tasks:
+    - name: Check Zabbix server installation
+      package:
+        name: zabbix-server-pgsql
+        state: present
+      check_mode: true
+      register: zabbix_server_check
+    
+    - name: Display Zabbix server status
+      debug:
+        msg: "Zabbix server {{ 'is installed' if zabbix_server_check.changed == false else 'needs installation' }} on {{ inventory_hostname }}"
+    
+    - name: Check Zabbix frontend installation
+      package:
+        name: zabbix-frontend-php
+        state: present
+      check_mode: true
+      register: zabbix_frontend_check
+    
+    - name: Display Zabbix frontend status
+      debug:
+        msg: "Zabbix frontend {{ 'is installed' if zabbix_frontend_check.changed == false else 'needs installation' }} on {{ inventory_hostname }}"
+
+- name: Check Elasticsearch
+  hosts: elasticsearch_server
+  gather_facts: false
+  
+  tasks:
+    - name: Check Elasticsearch installation
+      package:
+        name: elasticsearch
+        state: present
+      check_mode: true
+      register: elasticsearch_check
+    
+    - name: Display Elasticsearch status
+      debug:
+        msg: "Elasticsearch {{ 'is installed' if elasticsearch_check.changed == false else 'needs installation' }} on {{ inventory_hostname }}"
+
+- name: Check Kibana
+  hosts: kibana_server
+  gather_facts: false
+  
+  tasks:
+    - name: Check Kibana installation
+      package:
+        name: kibana
+        state: present
+      check_mode: true
+      register: kibana_check
+    
+    - name: Display Kibana status
+      debug:
+        msg: "Kibana {{ 'is installed' if kibana_check.changed == false else 'needs installation' }} on {{ inventory_hostname }}"
+
+- name: Generate Summary Report
+  hosts: localhost
+  gather_facts: false
+  
+  tasks:
+    - name: Create installation checklist
+      debug:
+        msg: |
+          Чек-лист установки сервисов для дипломного проекта:
+          
+          1. Веб-сервера (web_servers):
+             - nginx ✓
+             - zabbix-agent □
+             - filebeat □
+             - Веб-контент в /var/www/html ✓
+          
+          2. Сервер Zabbix (zabbix_server):
+             - Zabbix server □
+             - Zabbix frontend □
+             - PostgreSQL (или внешняя БД) □
+          
+          3. Elasticsearch (elasticsearch):
+             - Elasticsearch □
+          
+          4. Kibana (kibana):
+             - Kibana □
+          
+          Примечание: ✓ - проверено, □ - требуется установка
+          
+          Для установки недостающих компонентов создайте соответствующие playbook.

@@ -1,0 +1,121 @@
+---
+# Простой тестовый playbook для проверки инфраструктуры дипломного проекта
+# Проверяет подключение, собирает информацию и проверяет ключевые сервисы
+
+- name: Test Infrastructure Connectivity and Services
+  hosts: all_servers
+  gather_facts: true
+  become: false
+  
+  tasks:
+    - name: Display host information
+      debug:
+        msg: "Testing host {{ inventory_hostname }} ({{ ansible_host }})"
+  
+    - name: Check SSH connectivity
+      ping:
+  
+    - name: Gather system information
+      debug:
+        msg: |
+          Host: {{ inventory_hostname }}
+          OS: {{ ansible_distribution }} {{ ansible_distribution_version }}
+          Kernel: {{ ansible_kernel }}
+          Memory: {{ ansible_memtotal_mb }} MB
+          CPUs: {{ ansible_processor_vcpus }}
+          IP: {{ ansible_default_ipv4.address }}
+
+- name: Test Web Servers
+  hosts: web_servers
+  gather_facts: false
+  
+  tasks:
+    - name: Check if nginx is installed
+      command: which nginx
+      register: nginx_check
+      ignore_errors: true
+    
+    - name: Display nginx status
+      debug:
+        msg: "nginx {{ 'is installed' if nginx_check.rc == 0 else 'is NOT installed' }} on {{ inventory_hostname }}"
+    
+    - name: Check nginx service status
+      service:
+        name: nginx
+      register: nginx_service
+      ignore_errors: true
+    
+    - name: Display nginx service status
+      debug:
+        msg: "nginx service is {{ nginx_service.state }} on {{ inventory_hostname }}"
+      when: nginx_service is defined
+
+- name: Test Monitoring Server
+  hosts: zabbix_server
+  gather_facts: false
+  
+  tasks:
+    - name: Check if Zabbix server port is listening
+      wait_for:
+        port: 10051
+        timeout: 5
+      ignore_errors: true
+    
+    - name: Display Zabbix server status
+      debug:
+        msg: "Zabbix server port 10051 {{ 'is listening' if zabbix_port_check is defined and zabbix_port_check is succeeded else 'is NOT listening' }} on {{ inventory_hostname }}"
+      vars:
+        zabbix_port_check: "{{ ansible_results | selectattr('task', 'equalto', 'Check if Zabbix server port is listening') | first }}"
+
+- name: Test Elasticsearch
+  hosts: elasticsearch_server
+  gather_facts: false
+  
+  tasks:
+    - name: Check Elasticsearch HTTP port
+      uri:
+        url: "http://{{ ansible_host | default(inventory_hostname) }}:9200"
+        method: GET
+        timeout: 5
+      register: elasticsearch_check
+      ignore_errors: true
+    
+    - name: Display Elasticsearch status
+      debug:
+        msg: "Elasticsearch {{ 'is responding' if elasticsearch_check.status == 200 else 'is NOT responding' }} on {{ ansible_host | default(inventory_hostname) }}:9200"
+
+- name: Test Kibana
+  hosts: kibana_server
+  gather_facts: false
+  
+  tasks:
+    - name: Check Kibana web interface
+      uri:
+        url: "http://{{ ansible_host | default(inventory_hostname) }}:5601"
+        method: GET
+        timeout: 5
+      register: kibana_check
+      ignore_errors: true
+    
+    - name: Display Kibana status
+      debug:
+        msg: "Kibana {{ 'is responding' if kibana_check.status == 200 else 'is NOT responding' }} on {{ ansible_host | default(inventory_hostname) }}:5601"
+
+- name: Summary Report
+  hosts: localhost
+  gather_facts: false
+  
+  tasks:
+    - name: Create test summary
+      debug:
+        msg: |
+          Тестирование инфраструктуры завершено.
+          
+          Для запуска полного теста выполните:
+            ansible-playbook -i inventory.ini test_playbook.yml
+          
+          Для тестирования отдельных групп:
+            ansible-playbook -i inventory.ini test_playbook.yml --limit web_servers
+            ansible-playbook -i inventory.ini test_playbook.yml --limit zabbix_server
+            ansible-playbook -i inventory.ini test_playbook.yml --limit elasticsearch
+            ansible-playbook -i inventory.ini test_playbook.yml --limit kibana

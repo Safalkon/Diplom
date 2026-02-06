@@ -1,0 +1,111 @@
+---
+# Playbook для сбора детальной информации о системе
+
+- name: Collect System Information
+  hosts: all_servers
+  gather_facts: true
+  
+  tasks:
+    - name: Display host summary
+      debug:
+        msg: |
+          === System Information for {{ inventory_hostname }} ===
+          Hostname: {{ ansible_hostname }}
+          FQDN: {{ ansible_fqdn }}
+          Distribution: {{ ansible_distribution }} {{ ansible_distribution_version }}
+          Architecture: {{ ansible_architecture }}
+          Kernel: {{ ansible_kernel }}
+          Date: {{ ansible_date_time.date }}
+          Uptime: {{ ansible_uptime_seconds | int / 3600 | round(1) }} hours
+          
+          === Hardware Information ===
+          CPU Cores: {{ ansible_processor_vcpus }}
+          Total Memory: {{ ansible_memtotal_mb }} MB
+          Available Memory: {{ ansible_memfree_mb }} MB
+          Swap Total: {{ ansible_swaptotal_mb }} MB
+          
+          === Network Information ===
+          Default IPv4: {{ ansible_default_ipv4.address }}
+          All IPv4 Addresses:
+          {% for interface, addresses in ansible_interfaces.items() %}
+          {{ interface }}: {{ addresses.ipv4.address | default('N/A') }}
+          {% endfor %}
+          
+          === Disk Information ===
+          {% for mount in ansible_mounts %}
+          Mount: {{ mount.mount }} ({{ mount.device }})
+            Size: {{ mount.size_total | bytes_to_human }}
+            Used: {{ mount.size_available | bytes_to_human }} available
+            Usage: {{ (100 - mount.size_available|int / mount.size_total|int * 100) | round(1) }}%
+          {% endfor %}
+
+- name: Check Critical Services
+  hosts: all_servers
+  gather_facts: false
+  
+  tasks:
+    - name: Check SSH service
+      service:
+        name: ssh
+      register: ssh_service
+    
+    - name: Display SSH service status
+      debug:
+        msg: "SSH service is {{ ssh_service.state }} on {{ inventory_hostname }}"
+    
+    - name: Check systemd services
+      command: systemctl list-units --type=service --state=running | head -20
+      register: running_services
+      changed_when: false
+    
+    - name: Display top running services
+      debug:
+        msg: "Top running services on {{ inventory_hostname }}:\n{{ running_services.stdout }}"
+
+- name: Check Security Updates
+  hosts: all_servers
+  gather_facts: false
+  
+  tasks:
+    - name: Check for security updates (Ubuntu)
+      apt:
+        update_cache: yes
+        upgrade: safe
+        check_mode: yes
+      register: security_updates
+      when: ansible_distribution == "Ubuntu"
+    
+    - name: Display security updates status
+      debug:
+        msg: "Security updates available: {{ security_updates.changed | default(false) | ternary('Yes', 'No') }} on {{ inventory_hostname }}"
+      when: ansible_distribution == "Ubuntu"
+
+- name: Generate System Health Report
+  hosts: localhost
+  gather_facts: false
+  
+  tasks:
+    - name: Create health report summary
+      debug:
+        msg: |
+          === Отчет о состоянии систем ===
+          
+          Для просмотра детальной информации выполните:
+            ansible-playbook -i inventory.ini system_info.yml
+          
+          Команды для проверки отдельных аспектов:
+          
+          1. Проверка подключения:
+            ansible -i inventory.ini all -m ping
+          
+          2. Проверка использования диска:
+            ansible -i inventory.ini all -a "df -h"
+          
+          3. Проверка использования памяти:
+            ansible -i inventory.ini all -a "free -m"
+          
+          4. Проверка запущенных процессов:
+            ansible -i inventory.ini all -a "ps aux | head -20"
+          
+          5. Проверка логов системы:
+            ansible -i inventory.ini all -a "tail -20 /var/log/syslog"
